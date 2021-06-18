@@ -82,9 +82,9 @@ class Euristica:
                 for n in range(len(r) - 1):
                     val_f_ob = val_f_ob + self.istanza.distances[r[n], r[n + 1]]
 
-        routes_of_routes.append((routes[:], routes[0]))
-        trucks_count.append(truck_count)
-        obj_values.append(val_f_ob)
+            routes_of_routes.append((routes[:], routes[0]))
+            trucks_count.append(truck_count)
+            obj_values.append(val_f_ob)
 
         return routes_of_routes, trucks_count, obj_values
 """""
