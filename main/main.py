@@ -1,33 +1,31 @@
-import library_CVRPTW as lib
-import library_euristica as eur
+from librerie import libreria_Alg_Genetico as gen, libreria_CVRPTW as lib
 
-file = "C101.txt"
+file = "..\Solomon\C101.txt"
 istanza = lib.CVRPTW(file)
 # soluzione = istanza.optimize()
 # istanza.print_solution(soluzione[0])
 
 # ---------------------------Generazione della popolazione di soluzioni iniziali ------------------------------
 
-
 def main():
-    test = eur.Euristica(istanza)
+    test = gen.Algoritmo_genetico(istanza)
     percorsi = []
     tracks = []
     obj_val = []
-    percorsi, tracks, obj_val= test.calcola_soluzioni()
+    test.gen_popolazione_iniziale()
 
-    print("Percorsi:")
-    print(percorsi)
-    print("Tracks:")
-    print(tracks)
-    print ("obj_val:")
-    print(obj_val)
+    for i in range(len(test.popolazione)):
+        print("*********************** SOLUZIONE ",i," ***********************","\n")
+        print("Percorsi:")
+        print([k.number for k in test.popolazione[i].routes])
+        print("Tracks:", test.popolazione[i].truck_count)
+        print ("Fitness :",test.popolazione[i].fitness, "\n")
 
 
 if __name__ == "__main__":
     main()
 
-"""    
+"""
 Graph2 = lib.nx.DiGraph()
 list_nodes = list(range(istanza.num_nodes))
 Graph2.add_nodes_from(list_nodes)
