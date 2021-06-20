@@ -68,8 +68,6 @@ def BCRC(soluzione1, soluzione2, range):
                 break
         soluzione2.routes.insert(indice+1, j)
 
-    # print(list2)
-    # print("\nSoluzione formattata")
     return soluzione1, soluzione2
 
 
