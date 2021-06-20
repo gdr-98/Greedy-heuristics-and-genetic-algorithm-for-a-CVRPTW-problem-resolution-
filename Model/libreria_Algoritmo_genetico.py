@@ -4,17 +4,71 @@ from random import choice
 from random import seed
 
 
-class Soluzione :
-    def __init__(self, percorsi, camion, matrice_dist):
+class Soluzione:
+    def __init__(self, percorsi, cvrptw_istanza, camion=0):
+        self.istanza = cvrptw_istanza
         self.routes = percorsi[0:len(percorsi)]
         self.truck_count = camion
-        self.calcola_fitness(matrice_dist)
+        self.fitness = self.calcola_fitness(cvrptw_istanza.distances)
 
-    def calcola_fitness(self,matrice):
-        self.fitness = 0
+    def calcola_fitness(self, matrice_distanze):
+        fitness = 0
         for n in range(len(self.routes) - 1):
             if self.routes[n].number != self.routes[n + 1].number :
-                self.fitness += matrice[self.routes[n].number, self.routes[n + 1].number ]
+                fitness += matrice_distanze[self.routes[n].number, self.routes[n + 1].number]
+        return fitness
+
+    # Attenzione!
+    # Funziona solo con soluzione da cui è stato rimosso il deposito (nodo 0)
+    # Se bisogna usarla per soluzioni con 0, è necessario inserire un controllo all'inizio
+    def is_admissible(self):
+        t = 0
+        truck_number = 1
+        current_node = 0
+        remaining_capacity = self.istanza.capacity
+        i = 0
+        ammissibile = 1
+
+        # Per ogni nodo di routes
+        while i < len(self.routes) - 1:
+            # Current_node -> deposito fittizio
+            # next_node -> routes[i] per i che parte da 0
+            next_node = self.istanza.nodes[self.routes[i].number]
+
+            # Verifica vincoli di capacità e temporali
+            if next_node.demand <= remaining_capacity and (
+                    t + self.istanza.travel_times[current_node, next_node.number]) <= next_node.due_date:
+                remaining_capacity = remaining_capacity - next_node.demand
+                if (t + self.istanza.travel_times[current_node, next_node.number]) <= next_node.rdy_time:
+                    t = next_node.rdy_time + next_node.service_time
+                else:
+                    t = t + self.istanza.travel_times[current_node, next_node.number] + next_node.service_time
+                # Se è tutt ok, si incrementano curren_node e next_node
+                current_node = next_node.number
+                i += 1
+            # Altrimenti:
+            # truck_number ++ -> parte un nuovo camion, se ne incrementa il conteggio
+            # t = 0 -> si resetta il tempo, partendo da un nuovo deposito
+            # si resetta la capacità
+            # current_node = 0 -> nuovo deposito fittizio
+            else:
+                truck_number += 1
+                t = 0
+                remaining_capacity = self.istanza.capacity
+                current_node = 0
+
+        # Condizione di ammissibilità = numero di camion minore al numero consentito
+        if truck_number > self.istanza.num_vehicle:
+            ammissibile = 0
+        else:
+            self.truck_count = truck_number
+
+        return ammissibile
+
+    def stampa(self):
+        for i in self.routes:
+            print(i.number, end=", ")
+        print("\r")
 
 
 class Algoritmo_genetico:
@@ -90,6 +144,6 @@ class Algoritmo_genetico:
             for r in routes:
                 temp.extend(r)
             routes_of_routes.extend(temp)
-            self.popolazione.append(Soluzione(routes_of_routes, truck_count, self.istanza.distances))
+            self.popolazione.append(Soluzione(routes_of_routes, self.istanza, truck_count))
             routes_of_routes = []
 
