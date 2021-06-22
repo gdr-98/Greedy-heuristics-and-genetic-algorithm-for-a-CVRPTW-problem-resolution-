@@ -16,6 +16,7 @@ class Soluzione:
         self.truck_count = camion
         self.valore_f_ob = self.calcola_val_f_ob(cvrptw_istanza.distances)
         self.fitness = 1/self.valore_f_ob
+        self.admissible = 1
 
     def calcola_val_f_ob(self, matrice_distanze):
         val_f_ob = 0
@@ -28,40 +29,42 @@ class Soluzione:
     # Funziona solo con soluzione da cui è stato rimosso il deposito (nodo 0)
     # Se bisogna usarla per soluzioni con 0, è necessario inserire un controllo all'inizio
     def is_admissible(self):
-        t = 0
+        current_time = 0
         truck_number = 0
         current_node = 0
         self.routes.insert(current_node, self.istanza.nodes[0])
         remaining_capacity = self.istanza.capacity
         i = 0
+        k = 0
         ammissibile = 1
 
         # Per ogni nodo di routes
-        while i < 99 + truck_number :
+        while k < 99 :
             # Current_node -> deposito fittizio
             # next_node -> routes[i] per i che parte da 0
             next_node = self.routes[i+1]
 
             # Verifica vincoli di capacità e temporali
             if next_node.demand <= remaining_capacity and (
-                    t + self.istanza.travel_times[current_node, next_node.number]) <= next_node.due_date:
+                    current_time + self.istanza.travel_times[current_node, next_node.number]) <= next_node.due_date:
                 remaining_capacity = remaining_capacity - next_node.demand
-                if (t + self.istanza.travel_times[current_node, next_node.number]) <= next_node.rdy_time:
-                    t = next_node.rdy_time + next_node.service_time
+                if (current_time + self.istanza.travel_times[current_node, next_node.number]) <= next_node.rdy_time:
+                    current_time = next_node.rdy_time + next_node.service_time
                 else:
-                    t = t + self.istanza.travel_times[current_node, next_node.number] + next_node.service_time
+                    current_time = current_time + self.istanza.travel_times[current_node, next_node.number] + next_node.service_time
                 # Se è tutto ok, si incrementano current_node e next_node
                 current_node = next_node.number
                 i += 1
+                k += 1
             # Altrimenti:
             # truck_number ++ -> parte un nuovo camion, se ne incrementa il conteggio
-            # t = 0 -> si resetta il tempo, partendo da un nuovo deposito
+            # current_time = 0 -> si resetta il tempo, partendo da un nuovo deposito
             # si resetta la capacità
             # current_node = 0 -> nuovo deposito fittizio
             else:
                 truck_number += 1
                 self.routes.insert(i, self.istanza.nodes[0])
-                t = 0
+                current_time = 0
                 i += 1
                 remaining_capacity = self.istanza.capacity
                 current_node = 0
@@ -71,11 +74,14 @@ class Soluzione:
         truck_number += 1
         if truck_number > self.istanza.num_vehicle:
             ammissibile = 0
+            self.admissible = 0
             self.truck_count = truck_number
         else:
             self.truck_count = truck_number
             self.valore_f_ob = self.calcola_val_f_ob(self.istanza.distances)
             self.fitness = 1/self.valore_f_ob
+            self.admissible = 1
+            ammissibile = 1
 
         return ammissibile
 
@@ -91,11 +97,11 @@ class Soluzione:
     def __repr__(self):
         return self.__str__(self)
 
-    def copia(self, solution_to_copy):
+    def copy(self, solution_to_copy):
         self.istanza = solution_to_copy.istanza
         self.routes = solution_to_copy.routes[0:len(solution_to_copy.routes)]
-        self.truck_count = solution_to_copy.routes.truck_count
-        self.valore_f_ob = solution_to_copy.routes.valore_f_ob
+        self.truck_count = solution_to_copy.truck_count
+        self.valore_f_ob = solution_to_copy.valore_f_ob
         self.fitness = solution_to_copy.fitness
 
 
@@ -208,7 +214,18 @@ class Algoritmo_genetico:
 
         return self.popolazione
 
-    #def start_algorithm(self):
+    def start_algorithm(self):
+        best = self.best_solution()
+        worst = self.worst_solution()
+        while worst.valore_f_ob - best.valore_f_ob > 150:
+            (index_parent1, index_parent2) = self.__simulazione_montecarlo()
+            (child_1,child_2) = self.__BCRC(self.popolazione[index_parent1], self.popolazione[index_parent2], 30)
+            (index_worst1, index_worst2) = self.__estrai_soluzioni_peggoiri()
+            outcome = self.__aggiorna_popolazione(index_worst1, index_worst2, child_1, child_2)
+            if outcome == 1:
+                print("Generate entrambe soluzioni non ammissibili")
+
+        return self.best_solution()
 
     def __calcola_fitness_cumulata(self, lista_fitness):
         fitness_cumulata = []
@@ -244,7 +261,7 @@ class Algoritmo_genetico:
                 i += 1
 
         # print("a : ", a, "index_a: ", index_a, "b: ", b, "index_b : ", index_b, "\n")
-        return [self.popolazione[index_a], self.popolazione[index_b]]
+        return index_a, index_b
 
     def __BCRC(self, soluzione1, soluzione2, range):  # Crossover
 
@@ -322,12 +339,60 @@ class Algoritmo_genetico:
         arg_sort = np.argsort(fitness)
         return arg_sort[0],arg_sort[1]
 
-    #def aggiorna_popolazione(self):
+    def __aggiorna_popolazione(self, index_old_sol_1, index_old_sol_2, new_sol_1, new_sol_2):
 
+        if self.popolazione[index_old_sol_1].fitness > self.popolazione[index_old_sol_2].fitness:
+            index_worst_old = index_old_sol_2  # index_worst_old è la soluzione migliore di quelle scelte per essere eliminate
+            index_best_old = index_old_sol_1  # index_best_old è la soluzione migliore delle due scelte per essere eliminate
+        else:
+            index_worst_old = index_old_sol_1
+            index_best_old = index_old_sol_2
 
-    def best_solution(self):                    # Ritorna la soluzione della popolazione con migliore fitness
+        sol1_acceptable = new_sol_1.is_admissible()
+        sol2_acceptable = new_sol_2.is_admissible()
+
+        if sol1_acceptable and sol2_acceptable:
+
+            if new_sol_1.fitness > new_sol_2.fitness:
+                best_new = new_sol_1                # best_new è la soluzione migliore delle due scelte per essere inserite
+                worst_new = new_sol_2               # worst_new è la soluzione migliore delle due scelte per essere inserite
+            else:
+                best_new = new_sol_2
+                worst_new = new_sol_1
+
+            if best_new.fitness <= self.popolazione[index_worst_old].fitness:  # Se la peggiore delle soluzioni da rimuovere
+                # ha una fitness migliore della migliore delle soluzioni nuove allora non si possono effettuare scambi
+                return 0
+
+            else:
+                if best_new.fitness > self.popolazione[index_best_old].fitness and worst_new.fitness > self.popolazione[index_worst_old].fitness:
+                    self.popolazione[index_best_old].copy(best_new)
+                    self.popolazione[index_worst_old].copy(worst_new)
+
+                elif worst_new.fitness <= self.popolazione[index_worst_old].fitness:
+                    self.popolazione[index_worst_old].copy(best_new)
+
+                return 0
+
+        elif sol1_acceptable:
+
+            if new_sol_1.fitness > self.popolazione[index_worst_old].fitness:
+                self.popolazione[index_worst_old].copy(new_sol_1)
+
+            return 0
+
+        elif sol2_acceptable:
+
+            if new_sol_2.fitness > self.popolazione[index_worst_old].fitness:
+                self.popolazione[index_worst_old].copy(new_sol_2)
+
+            return 0
+
+        else:
+            return 1
+
+    def worst_solution(self):                   # Ritorna la soluzione della popolazione con fitness più bassa
+        return min(self.popolazione, key=lambda item: item.fitness)
+
+    def best_solution(self):                    # Ritorna la soluzione della popolazione con fitness più alta
         return max(self.popolazione, key=lambda item: item.fitness)
-
-    def test(self):
-        return self.__BCRC(self.popolazione[0], self.popolazione[49],10)
-        #return self.estrai_soluzioni_peggoiri()
