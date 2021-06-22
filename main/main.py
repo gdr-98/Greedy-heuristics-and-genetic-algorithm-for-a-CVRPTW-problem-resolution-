@@ -12,17 +12,10 @@ def main():
     # soluzione = istanza.optimize()
     test = gen.Algoritmo_genetico(istanza)
     popolazione = test.gen_popolazione_iniziale()
-
-    print(popolazione[0].valore_f_ob)
-    print(popolazione[49].valore_f_ob)
-    i = 0
-    for _ in range(50):
-        (sol1, sol2) = test.test()
-        sol1.is_admissible()
-        sol2.is_admissible()
-        if sol1.truck_count <= 25 :
-            print(i+1, " ", sol1.valore_f_ob, " : ", sol1.truck_count, "||| ", sol2.valore_f_ob, " : ", sol2.truck_count)
-            i += 1
+    best = test.start_algorithm()
+    print(best)
+    for i in test.popolazione:
+        print(i.valore_f_ob )
 
 
 if __name__ == "__main__":
