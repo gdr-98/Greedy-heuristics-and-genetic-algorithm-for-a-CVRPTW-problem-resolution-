@@ -332,6 +332,80 @@ class Algoritmo_genetico:
 
         return  new_solution1,new_solution2
 
+    def double_crossover(self, sol1, sol2, r):
+        # Seed per le funzioni randomiche
+        seed(time.time())
+        # Si rimuove il deposito dai genitori
+        tmp_routes1 = [i.number for i in sol1.routes if i.number != 0]
+        tmp_routes2 = [i.number for i in sol2.routes if i.number != 0]
+        # Si prende un indice casuale che taglia la stringa
+        index1 = random.randint(0, len(tmp_routes1) - r)
+        index2 = random.randint(index1, index1 + r)
+        print("Range: [", index1, ",", index2, "]")
+
+
+        # Si costruiscono i tagli sulla base dei due indici casuali
+        list1 = tmp_routes1[index1:index2]
+        list2 = tmp_routes2[index1:index2]
+        """
+        print("Range: [", index1, ",", index2, "]\n")
+        print("Crossover1: [", end= " ")
+        for i in list1:
+            print(i, end=" ")
+        print("]\n")
+        print("Crossover2: [", end= " ")
+        for i in list2:
+            print(i, end=" ")
+        print("]\n")
+        """
+        #eseguo il crossover
+        tmp_routes1[index1:index2] = list2
+        tmp_routes2[index1:index2] = list1
+        """
+        for i in tmp_routes1:
+            print(i, end=", ")
+        print("\n")
+        for i in tmp_routes2:
+            print(i, end=", ")
+        """
+        #filtro le nuove soluzioni con il metodo del TSP
+        for i in range(0,index1-1):
+            for j in range(len(list2)):
+                if tmp_routes1[i] == list2[j]:
+                    tmp_routes1[i] = list1[j]
+        for i in range(index2+1, len(tmp_routes1)):
+            for j in range(len(list2)):
+                if tmp_routes1[i] == list2[j]:
+                    tmp_routes1[i] = list1[j]
+
+        for i in range(0, index1 - 1):
+            for j in range(len(list1)):
+                if tmp_routes2[i] == list1[j]:
+                    tmp_routes2[i] = list2[j]
+        for i in range(index2 + 1, len(tmp_routes2)):
+            for j in range(len(list1)):
+                if tmp_routes2[i] == list1[j]:
+                    tmp_routes2[i] = list2[j]
+        """
+        for i in tmp_routes1:
+            print(i, end=", ")
+        print(end="\n")
+        for i in tmp_routes2:
+            print(i, end=", ")
+        """
+        nodes = []
+        for i in tmp_routes1:
+            nodes.append(self.istanza.nodes[i])
+        new_sol1 = Solution(nodes, self.istanza)
+        nodes = []
+        for i in tmp_routes2:
+            nodes.append(self.istanza.nodes[i])
+        new_sol2 = Solution(nodes, self.istanza)
+
+        return new_sol1, new_sol2
+
+    
+    
     def __estrai_soluzioni_peggoiri(self):      # Ritorna gli indici delle 2 soluzioni con fitenss più bassa
         fitness = []
         for i in self.popolazione:
