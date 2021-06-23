@@ -34,15 +34,15 @@ class Soluzione:
         current_node = 0
         self.routes.insert(current_node, self.istanza.nodes[0])
         remaining_capacity = self.istanza.capacity
-        i = 0
+        i = 1
         k = 0
         ammissibile = 1
 
         # Per ogni nodo di routes
-        while k < 99 :
+        while k < 100:
             # Current_node -> deposito fittizio
             # next_node -> routes[i] per i che parte da 0
-            next_node = self.routes[i+1]
+            next_node = self.routes[i]
 
             # Verifica vincoli di capacità e temporali
             if next_node.demand <= remaining_capacity and (
@@ -72,6 +72,7 @@ class Soluzione:
         # Condizione di ammissibilità = numero di camion minore al numero consentito
         self.routes.append(self.istanza.nodes[0])
         truck_number += 1
+
         if truck_number > self.istanza.num_vehicle:
             ammissibile = 0
             self.admissible = 0
@@ -217,17 +218,31 @@ class Algoritmo_genetico:
     def start_algorithm(self):
         best = self.best_solution()
         worst = self.worst_solution()
-        while worst.valore_f_ob - best.valore_f_ob > 150:
+        while worst.valore_f_ob - best.valore_f_ob > 10:     # Genera nuove soluzioni finché il peggior individuo della
+                                                            # poolazione non dista meno di 10 dal peggiore
+            # Estrai con la simulazione montecarlo gli indici di due genitori dalla popolazione
             (index_parent1, index_parent2) = self.__simulazione_montecarlo()
-            (child_1,child_2) = self.__BCRC(self.popolazione[index_parent1], self.popolazione[index_parent2], 30)
+
+            # Crossover tra i due genitori
+            (child_1,child_2) = self.__BCRC(self.popolazione[index_parent1], self.popolazione[index_parent2],10)
+
+            # Estrazione delle 2 soluzioni peggiori, eventualmente da sostituire
             (index_worst1, index_worst2) = self.__estrai_soluzioni_peggoiri()
+
+            # Aggiornamento della popolazione con i nuovi individui, se vantaggioso
             outcome = self.__aggiorna_popolazione(index_worst1, index_worst2, child_1, child_2)
+
             if outcome == 1:
-                print("Generate entrambe soluzioni non ammissibili")
+                print("Generate due soluzioni inammissibili")
+
+            # Calcolo la nuova soluzione migliore e la nuova soluzione peggiore
+            best = self.best_solution()
+            worst = self.worst_solution()
 
         return self.best_solution()
 
     def __calcola_fitness_cumulata(self, lista_fitness):
+
         fitness_cumulata = []
         F = sum(lista_fitness)
         for i in range(len(lista_fitness)):
@@ -332,80 +347,6 @@ class Algoritmo_genetico:
 
         return  new_solution1,new_solution2
 
-    def double_crossover(self, sol1, sol2, r):
-        # Seed per le funzioni randomiche
-        seed(time.time())
-        # Si rimuove il deposito dai genitori
-        tmp_routes1 = [i.number for i in sol1.routes if i.number != 0]
-        tmp_routes2 = [i.number for i in sol2.routes if i.number != 0]
-        # Si prende un indice casuale che taglia la stringa
-        index1 = random.randint(0, len(tmp_routes1) - r)
-        index2 = random.randint(index1, index1 + r)
-        print("Range: [", index1, ",", index2, "]")
-
-
-        # Si costruiscono i tagli sulla base dei due indici casuali
-        list1 = tmp_routes1[index1:index2]
-        list2 = tmp_routes2[index1:index2]
-        """
-        print("Range: [", index1, ",", index2, "]\n")
-        print("Crossover1: [", end= " ")
-        for i in list1:
-            print(i, end=" ")
-        print("]\n")
-        print("Crossover2: [", end= " ")
-        for i in list2:
-            print(i, end=" ")
-        print("]\n")
-        """
-        #eseguo il crossover
-        tmp_routes1[index1:index2] = list2
-        tmp_routes2[index1:index2] = list1
-        """
-        for i in tmp_routes1:
-            print(i, end=", ")
-        print("\n")
-        for i in tmp_routes2:
-            print(i, end=", ")
-        """
-        #filtro le nuove soluzioni con il metodo del TSP
-        for i in range(0,index1-1):
-            for j in range(len(list2)):
-                if tmp_routes1[i] == list2[j]:
-                    tmp_routes1[i] = list1[j]
-        for i in range(index2+1, len(tmp_routes1)):
-            for j in range(len(list2)):
-                if tmp_routes1[i] == list2[j]:
-                    tmp_routes1[i] = list1[j]
-
-        for i in range(0, index1 - 1):
-            for j in range(len(list1)):
-                if tmp_routes2[i] == list1[j]:
-                    tmp_routes2[i] = list2[j]
-        for i in range(index2 + 1, len(tmp_routes2)):
-            for j in range(len(list1)):
-                if tmp_routes2[i] == list1[j]:
-                    tmp_routes2[i] = list2[j]
-        """
-        for i in tmp_routes1:
-            print(i, end=", ")
-        print(end="\n")
-        for i in tmp_routes2:
-            print(i, end=", ")
-        """
-        nodes = []
-        for i in tmp_routes1:
-            nodes.append(self.istanza.nodes[i])
-        new_sol1 = Solution(nodes, self.istanza)
-        nodes = []
-        for i in tmp_routes2:
-            nodes.append(self.istanza.nodes[i])
-        new_sol2 = Solution(nodes, self.istanza)
-
-        return new_sol1, new_sol2
-
-    
-    
     def __estrai_soluzioni_peggoiri(self):      # Ritorna gli indici delle 2 soluzioni con fitenss più bassa
         fitness = []
         for i in self.popolazione:
@@ -466,7 +407,8 @@ class Algoritmo_genetico:
             return 1
 
     def worst_solution(self):                   # Ritorna la soluzione della popolazione con fitness più bassa
-        return min(self.popolazione, key=lambda item: item.fitness)
+        return max(self.popolazione, key=lambda item: item.valore_f_ob)
 
     def best_solution(self):                    # Ritorna la soluzione della popolazione con fitness più alta
-        return max(self.popolazione, key=lambda item: item.fitness)
+        return min(self.popolazione, key=lambda item: item.valore_f_ob)
+
