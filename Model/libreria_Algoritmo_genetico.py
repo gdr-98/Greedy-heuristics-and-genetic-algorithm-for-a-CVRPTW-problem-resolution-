@@ -218,8 +218,22 @@ class Algoritmo_genetico:
     def start_algorithm(self):
         best = self.best_solution()
         worst = self.worst_solution()
+        mutation_probability = 0.2 
         while worst.valore_f_ob - best.valore_f_ob > 10:     # Genera nuove soluzioni finché il peggior individuo della
                                                             # poolazione non dista meno di 10 dal peggiore
+                
+            #Effettua una possibile mutazione
+            seed(time.time())
+            p = random.uniform(0,1)
+            if p<mutation_probability:
+                #effettua una mutazione
+                index_cavy = random.randint(0,len(self.population)-1)
+                parent_mut = self.__mutation(self.population[index_cavy],10)
+                if parent_mut.is_admissible() == 1:
+                    self.population[index_cavy].copy(parent_mut)
+                    print("Mutazione avvenuta")
+                else:
+                    print("Mutazione non avvenuta")    
             # Estrai con la simulazione montecarlo gli indici di due genitori dalla popolazione
             (index_parent1, index_parent2) = self.__simulazione_montecarlo()
 
@@ -427,6 +441,24 @@ class Algoritmo_genetico:
 
         return new_sol1, new_sol2
     
+    
+    def __mutation(self, sol, r):
+        seed(time.time())
+
+        # Si rimuove il deposito dalla soluzione
+        tmp_routes = [i.number for i in sol.routes if i.number != 0]
+        index1 = random.randint(0, len(tmp_routes) - r)
+        index2 = random.randint(index1, index1 + r)
+
+        # Si inverte l'oridine nel taglio centrale
+        mut = tmp_routes[index1:index2]
+        tmp_routes[index1:index2] = mut[::-1]
+
+        nodes = []
+        for i in tmp_routes:
+            nodes.append(self.istanza.nodes[i])
+        new_sol = Solution(nodes, self.istanza)
+        return new_sol
     
     def __estrai_soluzioni_peggoiri(self):      # Ritorna gli indici delle 2 soluzioni con fitenss più bassa
         fitness = []
