@@ -157,7 +157,7 @@ class Algoritmo_genetico:
         j = 0                       # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
 
         now = datetime.now().time().microsecond
-        seed(now)
+        seed(1)
 
         # Ciclo for : ogni iterazione genera una Solution nuova
         for sol_count in range(50):
@@ -235,7 +235,7 @@ class Algoritmo_genetico:
         best = self.best_solution()
         worst = self.worst_solution()
         mutation_probability = 0.2
-        while worst.valore_f_ob - best.valore_f_ob > 10:  # Genera nuove soluzioni finché il peggior individuo della
+        while worst.obj_fun_value - best.obj_fun_value > 0:  # Genera nuove soluzioni finché il peggior individuo della
             # poolazione non dista meno di 10 dal peggiore
 
             # Effettua una possibile mutazione
@@ -244,13 +244,14 @@ class Algoritmo_genetico:
             if p < mutation_probability:
                 # effettua una mutazione
                 index_cavy = random.randint(0, len(self.population) - 1)
-                parent_mut = self.__mutation(self.population[index_cavy], 10)
-                if parent_mut.is_admissible() == 1:
-                    self.population[index_cavy].copy(parent_mut)
-                    print("Mutazione avvenuta")
-                else:
-                    print("Mutazione non avvenuta")
-             
+                if self.population[index_cavy] != best:
+                    parent_mut = self.__mutation(self.population[index_cavy], 10)
+                    if parent_mut.is_admissible() == 1:
+                        self.population[index_cavy].copy(parent_mut)
+                        #print("Mutazione avvenuta")
+                    #else:
+                        #print("Mutazione non avvenuta")
+
             # Estrai con la simulazione montecarlo gli indici di due genitori dalla popolazione
             (index_parent1, index_parent2) = self.__Montecarlo_simulation()
 
