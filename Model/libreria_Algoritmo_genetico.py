@@ -45,7 +45,7 @@ class Solution:
 
         i = 1
         # Per ogni nodo di routes
-        while nodes_checked_count < 100:
+        while nodes_checked_count < self.instance.nodes_num - 1:
             # Current_node -> deposito fittizio
             # next_node -> routes[i] per i che parte da 0
             next_node = self.routes[i]
@@ -157,7 +157,7 @@ class Algoritmo_genetico:
         j = 0                       # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
 
         now = datetime.now().time().microsecond
-        seed(1)
+        seed(now)
 
         # Ciclo for : ogni iterazione genera una Solution nuova
         for sol_count in range(50):
@@ -173,7 +173,7 @@ class Algoritmo_genetico:
 
             while stop == 0:
                 if buff_truck:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + 3) == 0:    # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
+                    if j % (sol_count + 20) == 0:    # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
                         next_node = choice(buff_truck)
                     else:
                         next_node = buff_truck[0]   # Le restanti volte il nodo da analizzare è quello con due date più imminente
@@ -235,7 +235,7 @@ class Algoritmo_genetico:
         best = self.best_solution()
         worst = self.worst_solution()
         mutation_probability = 0.2
-        while worst.obj_fun_value - best.obj_fun_value > 0:  # Genera nuove soluzioni finché il peggior individuo della
+        while worst.obj_fun_value - best.obj_fun_value > 50:  # Genera nuove soluzioni finché il peggior individuo della
             # poolazione non dista meno di 10 dal peggiore
 
             # Effettua una possibile mutazione
@@ -539,7 +539,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-    def print_solution(self, solution):
+    def graph_solution(self, solution):
 
         Graph = nx.DiGraph()
         list_nodes = list(range(self.instance.nodes_num))
