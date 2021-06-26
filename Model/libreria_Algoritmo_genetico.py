@@ -17,13 +17,13 @@ class Solution:
         self.instance = cvrptw_instance
         self.routes = routes_row[0:len(routes_row)]
         self.truck_count = trucks
-        self.obj_fun_value = self.compute_obj_fun_value(cvrptw_instance.distances)
+        self.obj_fun_value = self.Compute_obj_fun_value(cvrptw_instance.distances)
         self.fitness = 1/self.obj_fun_value
         self.admissible = 1
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def compute_obj_fun_value(self, distances_matrix):
+    # Calcolo del valore della funzione obiettivo per la soluzione in questione
+    def Compute_obj_fun_value(self, distances_matrix):
         obj_fun_val = 0
         for n in range(len(self.routes) - 1):
             if self.routes[n].number != self.routes[n + 1].number :
@@ -31,11 +31,11 @@ class Solution:
         return obj_fun_val
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    # Attenzione!
-    # Funziona solo con Solution da cui è stato rimosso il deposito (nodo 0)
-    # Se bisogna usarla per soluzioni con 0, è necessario inserire un controllo all'inizio
-    def is_admissible(self):
+    # Verifica dell'ammissibilità della funzione
+    def Is_admissible(self):
+        # Attenzione!
+        # Funziona solo con Solution da cui è stato rimosso il deposito (nodo 0)
+        # Se bisogna usarla per soluzioni con 0, è necessario inserire un controllo all'inizio
         current_time = 0
         truck_number = 0
         current_node = 0
@@ -80,12 +80,15 @@ class Solution:
         truck_number += 1
 
         if truck_number > self.instance.num_vehicle:
-            admissible = 0
+            admissible = 1
             self.admissible = 0
             self.truck_count = truck_number
+            self.obj_fun_value = self.Compute_obj_fun_value(self.instance.distances) + 100*(truck_number - self.instance.num_vehicle)
+            self.fitness = 1/self.obj_fun_value
+
         else:
             self.truck_count = truck_number
-            self.obj_fun_value = self.compute_obj_fun_value(self.instance.distances)
+            self.obj_fun_value = self.Compute_obj_fun_value(self.instance.distances)
             self.fitness = 1/self.obj_fun_value
             self.admissible = 1
             admissible = 1
@@ -93,29 +96,31 @@ class Solution:
         return admissible
 
 # ----------------------------------------------------------------------------------------------------------------------
-
+    # Overload della funzione di print
     def __str__(self):
         print("Routes : ")
         for i in range(len(self.routes)):
-            if i == 0  or self.routes[i].number != 0:
+            if i == 0 or self.routes[i].number != 0:
                 print(self.routes[i].number, end=", ")
             else:
                 print("0")
-        return "\n" + "Valore funzione obiettivo : " + str(self.obj_fun_value) + "\n" + "Numero Camion : " + str(self.truck_count) + "\n"
+        return "\n" + "Valore funzione obiettivo : " + str(self.obj_fun_value) + "\n" + "Numero Camion : " \
+               + str(self.truck_count) + "\n" + "Ammissibile : " + str(self.admissible) + "\n"
 
 # ----------------------------------------------------------------------------------------------------------------------
-
+    # Overload della stampa per console
     def __repr__(self):
         return self.__str__(self)
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def copy(self, solution_to_copy):
-        self.instance = solution_to_copy.instance
-        self.routes = solution_to_copy.routes[0:len(solution_to_copy.routes)]
-        self.truck_count = solution_to_copy.truck_count
-        self.obj_fun_value = solution_to_copy.obj_fun_value
-        self.fitness = solution_to_copy.fitness
+    # Sovrascrittura dell'istanza
+    def Copy(self, solution_to_Copy):
+        self.instance = solution_to_Copy.instance
+        self.routes = solution_to_Copy.routes[0:len(solution_to_Copy.routes)]
+        self.truck_count = solution_to_Copy.truck_count
+        self.obj_fun_value = solution_to_Copy.obj_fun_value
+        self.fitness = solution_to_Copy.fitness
+        self.admissible = solution_to_Copy.admissible
 
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -129,8 +134,202 @@ class Algoritmo_genetico:
         self.population = []
 
 # ----------------------------------------------------------------------------------------------------------------------
+    # Generazione della popolazione iniziale di soluzioni ordinando per somma : deadline+tempo di spostamento
+    def Gen_starting_population_NF_EDF(self, pop_dim = 50, sol_quality = 10):
 
-    def gen_starting_population(self):         # Generazione della popolazione iniziale di soluzioni (50 soluzioni)
+        # Salvataggio della lista di nodi del grafo (non ordinata)
+        unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
+
+        # Inizializzazione variabili
+        current_node = 0            # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
+        current_time = 0            # Tempo trascorso per arruvare al current_node
+        remaining_capacity = self.instance.capacity     # Capacità rimanente del camion (il camion parte con capacità massima)
+        route = [self.instance.nodes[0]]             # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
+        j = 0                       # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
+
+        now = datetime.now().time().microsecond
+        seed(now)
+
+        # Ciclo for : ogni iterazione genera una Solution nuova
+        for sol_count in range(pop_dim):
+            routes = []         # Routes è la lista contente i percorsi dei vari camion quindi la Solution effettiva
+            stop = 0            # Condizione di terminazione del while seguente
+            truck_count = 0     # Truck_count riporta il numero di camion della Solution trovata (va inizializzato a 0)
+            nodes_left = unsorted_nodes[1:len(unsorted_nodes)]        # Nodes_left rappresenta l'insieme dei nodi non
+                                                                      # ancora raggiunti da nessun camion (escluso il deposito)
+            buff_truck = unsorted_nodes[1:len(unsorted_nodes)]        # Buff_truck rappresenta la lista dei nodi usata da
+            # un camion per tracciare il suo percorso (escluso il deposito); Esempio : per vincoli temporali o di capacità un nodo può essere
+            # eliminato da questa buff_truck (in quanto non raggiungibile dal camion in questione) ma non verrà eliminato
+            # dalla lista nodes_left siccome un altro camion potrebbe raggiungerlo
+
+            while stop == 0:
+                if buff_truck:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
+                    if j % (sol_count + sol_quality) == 0 :    # Ogni sol_count + sol_quality nodi aggiunti si sceglie
+                        next_node = choice(buff_truck)                      # casualmente il prossimo nodo da analizzare
+                    else:
+                        min_distance_time = 1000000000
+                        for i in buff_truck:
+                            if self.instance.distances[current_node, i.number] + i.due_date < min_distance_time:
+                                index_best_choice = i.number
+                                min_distance_time = self.instance.distances[current_node, i.number] + i.due_date
+                        next_node = self.instance.nodes[index_best_choice]
+
+                    if next_node.demand <= remaining_capacity and (
+                            current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.due_date:
+                        # Il nodo può essere aggiunto al percorso se non richiede più capacità di quella rimasta e se è
+                        # possibile spostarsi in esso dal nodo corrente senza superare la sua due date
+
+                        route.append(next_node)            # Aggiungo il nodo al percorso del camion
+                        buff_truck.remove(next_node)       # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
+                        nodes_left.remove(next_node)
+
+                        remaining_capacity = remaining_capacity - next_node.demand      # Aggiornamento capacità
+
+                        if (current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.rdy_time:
+                            current_time = next_node.rdy_time + next_node.service_time    # Se arrivo nel next_node prima
+                            # del suo ready time dovrò aspettare il ready time per servirlo quindi potrò lasciare il next_node
+                            # al tempo : ready_time del next node + tempo di servizio del next_node
+
+                        else:
+                            current_time = current_time + self.instance.travel_times[current_node, next_node.number] + next_node.service_time
+                            # Se arrivo dopo il ready time posso iniziare subito a servire il nodo
+
+                        current_node = next_node.number  # Aggiornamento nodo corrente
+                        j = j + 1  # Aggiornamento parametro per scelta casuale
+                    else:
+                        buff_truck.remove(next_node)    #Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
+                        # lista buff_truck, tale nodo sarà raggiunto da qualche altro camion
+
+                else:
+                    # Se buff_truck è vuoto vuol dire che il camion attuale non può coprire nessun altro nodo quindi dovrà
+                    # tornare nel deposito
+                    route.append(self.instance.nodes[0])
+                    routes.append(route[0:len(route)])        # Aggiungo il percorso all'insieme di percorsi rappresentante la Solution
+                    route = []                  # Ripristino la lista route (riparto dal deposito con un nuovo camion)
+                    truck_count = truck_count + 1   # Aggiornamento numero camion
+                    current_time = 0                # Ripristino current_node
+                    current_node = 0                # Ripristino tempo e capacità
+                    remaining_capacity = self.instance.capacity
+                    if nodes_left:        # Se ci sono ancora nodi da raggiungere li copio in buff_truck
+                        buff_truck = nodes_left[0:len(nodes_left)]
+                    else:               # Se non ci sono nodi in nodes_left vuol dire che i camion hanno coperto tutti
+                                        # i clienti quindi la Solution è completa
+                        stop = 1
+
+            # Adattamento del formato della Solution : la Solution così come è stata calcolata è una lista di percorsi
+            # quindi una lista di liste, tuttavia per facilitare il crossover la Solution sarà trasformata in una lista
+            # di nodi messi in ordine secondo i percorsi dei camion
+            temp = []
+            for r in routes:
+                temp.extend(r)
+            single_row_routes = temp[0:len(temp)]
+            self.population.append(Solution(single_row_routes, self.instance, truck_count))
+
+        return self.population[0:len(self.population)]
+
+# ----------------------------------------------------------------------------------------------------------------------
+    # Generazione della popolazione iniziale di soluzioni ordinando per tempo di spostamento più basso
+    def Gen_starting_population_NF(self, pop_dim=50, sol_quality=10):  # Generazione della popolazione iniziale di soluzioni
+
+        # Salvataggio della lista di nodi del grafo (non ordinata)
+        unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
+
+        # Inizializzazione variabili
+        current_node = 0  # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
+        current_time = 0  # Tempo trascorso per arruvare al current_node
+        remaining_capacity = self.instance.capacity  # Capacità rimanente del camion (il camion parte con capacità massima)
+        route = [self.instance.nodes[0]]  # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
+
+        j = 0  # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
+        now = datetime.now().time().microsecond
+        seed(now)
+
+        # Ciclo for : ogni iterazione genera una Solution nuova
+        for sol_count in range(pop_dim):
+            routes = []  # Routes è la lista contente i percorsi dei vari camion quindi la Solution effettiva
+            stop = 0  # Condizione di terminazione del while seguente
+            truck_count = 0  # Truck_count riporta il numero di camion della Solution trovata (va inizializzato a 0)
+            nodes_left = unsorted_nodes[1:len(unsorted_nodes)]  # Nodes_left rappresenta l'insieme dei nodi non
+            # ancora raggiunti da nessun camion (escluso il deposito)
+            buff_truck = unsorted_nodes[1:len(unsorted_nodes)]  # Buff_truck rappresenta la lista dei nodi usata da
+            # un camion per tracciare il suo percorso (escluso il deposito); Esempio : per vincoli temporali o di capacità un nodo può essere
+            # eliminato da questa buff_truck (in quanto non raggiungibile dal camion in questione) ma non verrà eliminato
+            # dalla lista nodes_left siccome un altro camion potrebbe raggiungerlo
+
+            while stop == 0:
+                if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
+                    if j % (sol_count + sol_quality) == 0:  # Ogni sol_count + sol_quality nodi aggiunti si sceglie
+                        next_node = choice(buff_truck)  # casualmente il prossimo nodo da analizzare
+                    else:
+                        min_distance_time = 1000000000
+                        for i in buff_truck:
+                            if self.instance.distances[current_node, i.number] < min_distance_time:
+                                index_nearest_node = i.number
+                                min_distance_time = self.instance.distances[current_node, i.number]
+                        next_node = self.instance.nodes[index_nearest_node]
+
+                    if next_node.demand <= remaining_capacity and (
+                            current_time + self.instance.travel_times[
+                        current_node, next_node.number]) <= next_node.due_date:
+                        # Il nodo può essere aggiunto al percorso se non richiede più capacità di quella rimasta e se è
+                        # possibile spostarsi in esso dal nodo corrente senza superare la sua due date
+
+                        route.append(next_node)  # Aggiungo il nodo al percorso del camion
+                        buff_truck.remove(
+                            next_node)  # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
+                        nodes_left.remove(next_node)
+
+                        remaining_capacity = remaining_capacity - next_node.demand  # Aggiornamento capacità
+
+                        if (current_time + self.instance.travel_times[
+                            current_node, next_node.number]) <= next_node.rdy_time:
+                            current_time = next_node.rdy_time + next_node.service_time  # Se arrivo nel next_node prima
+                            # del suo ready time dovrò aspettare il ready time per servirlo quindi potrò lasciare il next_node
+                            # al tempo : ready_time del next node + tempo di servizio del next_node
+
+                        else:
+                            current_time = current_time + self.instance.travel_times[
+                                current_node, next_node.number] + next_node.service_time
+                            # Se arrivo dopo il ready time posso iniziare subito a servire il nodo
+
+                        current_node = next_node.number  # Aggiornamento nodo corrente
+                        j = j + 1  # Aggiornamento parametro per scelta casuale
+                    else:
+                        buff_truck.remove(
+                            next_node)  # Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
+                        # lista buff_truck, tale nodo sarà raggiunto da qualche altro camion
+
+                else:
+                    # Se buff_truck è vuoto vuol dire che il camion attuale non può coprire nessun altro nodo quindi dovrà
+                    # tornare nel deposito
+                    route.append(self.instance.nodes[0])
+                    routes.append(
+                        route[0:len(route)])  # Aggiungo il percorso all'insieme di percorsi rappresentante la Solution
+                    route = []  # Ripristino la lista route (riparto dal deposito con un nuovo camion)
+                    truck_count = truck_count + 1  # Aggiornamento numero camion
+                    current_time = 0  # Ripristino current_node
+                    current_node = 0  # Ripristino tempo e capacità
+                    remaining_capacity = self.instance.capacity
+                    if nodes_left:  # Se ci sono ancora nodi da raggiungere li copio in buff_truck
+                        buff_truck = nodes_left[0:len(nodes_left)]
+                    else:  # Se non ci sono nodi in nodes_left vuol dire che i camion hanno coperto tutti
+                        # i clienti quindi la Solution è completa
+                        stop = 1
+
+            # Adattamento del formato della Solution : la Solution così come è stata calcolata è una lista di percorsi
+            # quindi una lista di liste, tuttavia per facilitare il crossover la Solution sarà trasformata in una lista
+            # di nodi messi in ordine secondo i percorsi dei camion
+            temp = []
+            for r in routes:
+                temp.extend(r)
+            single_row_routes = temp[0:len(temp)]
+            self.population.append(Solution(single_row_routes, self.instance, truck_count))
+
+        return self.population[0:len(self.population)]
+
+# ----------------------------------------------------------------------------------------------------------------------
+    # Generazione della popolazione iniziale di soluzioni ordinando per deadline più imminente
+    def Gen_starting_population_EDF(self, pop_dim, ran):  # Generazione della popolazione iniziale di soluzioni (50 soluzioni)
 
         # Salvataggio della lista di nodi del grafo (non ordinata)
         unsorted_nodes = self.instance.nodes
@@ -150,72 +349,78 @@ class Algoritmo_genetico:
                 static_sorted.append(unsorted_nodes[i])
 
         # Inizializzazione variabili
-        current_node = 0            # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
-        current_time = 0            # Tempo trascorso per arruvare al current_node
-        remaining_capacity = self.instance.capacity     # Capacità rimanente del camion (il camion parte con capacità massima)
-        route = [unsorted_nodes[0]]             # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
-        j = 0                       # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
+        current_node = 0  # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
+        current_time = 0  # Tempo trascorso per arruvare al current_node
+        remaining_capacity = self.instance.capacity  # Capacità rimanente del camion (il camion parte con capacità massima)
+        route = [unsorted_nodes[0]]  # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
+        j = 0  # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
 
         now = datetime.now().time().microsecond
         seed(now)
 
         # Ciclo for : ogni iterazione genera una Solution nuova
-        for sol_count in range(50):
-            routes = []         # Routes è la lista contente i percorsi dei vari camion quindi la Solution effettiva
-            stop = 0            # Condizione di terminazione del while seguente
-            truck_count = 0     # Truck_count riporta il numero di camion della Solution trovata (va inizializzato a 0)
-            nodes_left = static_sorted[0:len(static_sorted)]        # Nodes_left rappresenta l'insieme dei nodi non
-                                                                    # ancora raggiunti da nessun camion
-            buff_truck = static_sorted[0:len(static_sorted)]        # Buff_truck rappresenta la lista dei nodi usata da
+        for sol_count in range(pop_dim):
+            routes = []  # Routes è la lista contente i percorsi dei vari camion quindi la Solution effettiva
+            stop = 0  # Condizione di terminazione del while seguente
+            truck_count = 0  # Truck_count riporta il numero di camion della Solution trovata (va inizializzato a 0)
+            nodes_left = static_sorted[0:len(static_sorted)]  # Nodes_left rappresenta l'insieme dei nodi non
+            # ancora raggiunti da nessun camion
+            buff_truck = static_sorted[0:len(static_sorted)]  # Buff_truck rappresenta la lista dei nodi usata da
             # un camion per tracciare il suo percorso; Esempio : per vincoli temporali o di capacità un nodo può essere
             # eliminato da questa buff_truck (in quanto non raggiungibile dal camion in questione) ma non verrà eliminato
             # dalla lista nodes_left siccome un altro camion potrebbe raggiungerlo
 
             while stop == 0:
-                if buff_truck:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + 20) == 0:    # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
+                if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
+                    if j % (sol_count + ran) == 0:  # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
                         next_node = choice(buff_truck)
                     else:
-                        next_node = buff_truck[0]   # Le restanti volte il nodo da analizzare è quello con due date più imminente
+                        next_node = buff_truck[
+                            0]  # Le restanti volte il nodo da analizzare è quello con due date più imminente
 
                     if next_node.demand <= remaining_capacity and (
-                            current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.due_date:
+                            current_time + self.instance.travel_times[
+                        current_node, next_node.number]) <= next_node.due_date:
                         # Il nodo può essere aggiunto al percorso se non richiede più capacità di quella rimasta e se è
                         # possibile spostarsi in esso dal nodo corrente senza superare la sua due date
 
-                        route.append(next_node)            # Aggiungo il nodo al percorso del camion
-                        buff_truck.remove(next_node)       # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
+                        route.append(next_node)  # Aggiungo il nodo al percorso del camion
+                        buff_truck.remove(
+                            next_node)  # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
                         nodes_left.remove(next_node)
-                        remaining_capacity = remaining_capacity - next_node.demand      # Aggiornamento capacità
-                        if (current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.rdy_time:
-                            current_time = next_node.rdy_time + next_node.service_time    # Se arrivo nel next_node prima
+                        remaining_capacity = remaining_capacity - next_node.demand  # Aggiornamento capacità
+                        if (current_time + self.instance.travel_times[
+                            current_node, next_node.number]) <= next_node.rdy_time:
+                            current_time = next_node.rdy_time + next_node.service_time  # Se arrivo nel next_node prima
                             # del suo ready time dovrò aspettare il ready time per servirlo quindi potrò lasciare il next_node
                             # al tempo : ready_time del next node + tempo di servizio del next_node
 
                         else:
-                            current_time = current_time + self.instance.travel_times[current_node, next_node.number] + next_node.service_time
+                            current_time = current_time + self.instance.travel_times[
+                                current_node, next_node.number] + next_node.service_time
                             # Se arrivo dopo il ready time posso iniziare subito a servire il nodo
 
                         current_node = next_node.number  # Aggiornamento nodo corrente
-                        j = j + 1       # Aggiornamento parametro per scelta casuale
+                        j = j + 1  # Aggiornamento parametro per scelta casuale
 
                     else:
-                        buff_truck.remove(next_node)    #Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
+                        buff_truck.remove(
+                            next_node)  # Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
                         # lista buff_truck, tale nodo sarà raggiunto da qualche altro camion
                 else:
                     # Se buff_truck è vuoto vuol dire che il camion attuale non può coprire nessun altro nodo quindi dovrà
                     # tornare nel deposito
                     route.append(unsorted_nodes[0])
-                    routes.append(route)        # Aggiungo il percorso all'insieme di percorsi rappresentate la Solution
-                    route = []                  # Ripristino la lista route (riparto dal deposito con un nuovo camion)
-                    truck_count = truck_count + 1   # Aggiornamento numero camion
-                    current_time = 0                # Ripristino current_node
-                    current_node = 0                # Ripristino tempo e capacità
+                    routes.append(route[0:len(route)])  # Aggiungo il percorso all'insieme di percorsi rappresentate la Solution
+                    route = []  # Ripristino la lista route (riparto dal deposito con un nuovo camion)
+                    truck_count = truck_count + 1  # Aggiornamento numero camion
+                    current_time = 0  # Ripristino current_node
+                    current_node = 0  # Ripristino tempo e capacità
                     remaining_capacity = self.instance.capacity
-                    if len(nodes_left) != 0:        # Se ci sono ancora nodi da raggiungere li copio in buff_truck
+                    if len(nodes_left) != 0:  # Se ci sono ancora nodi da raggiungere li copio in buff_truck
                         buff_truck = nodes_left[0:len(nodes_left)]
-                    else:               # Se non ci sono nodi in nodes_left vuol dire che i camion hanno coperto tutti
-                                        # i clienti quindi la Solution è completa
+                    else:  # Se non ci sono nodi in nodes_left vuol dire che i camion hanno coperto tutti
+                        # i clienti quindi la Solution è completa
                         stop = 1
 
             # Adattamento del formato della Solution : la Solution così come è stata calcolata è una lista di percorsi
@@ -230,14 +435,15 @@ class Algoritmo_genetico:
         return self.population
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def start_algorithm(self):
-        best = self.best_solution()
-        worst = self.worst_solution()
-        mutation_probability = 0.2
-        while worst.obj_fun_value - best.obj_fun_value > 50:  # Genera nuove soluzioni finché il peggior individuo della
-            # poolazione non dista meno di 10 dal peggiore
-
+    # Avvio dell'algoritmo genetico
+    def Start_algorithm(self, tolerance, max_iterations = 200, mut_prob = 0.5, mut_dim = 20, crossover_dim = 20 ):
+        best = self.Best_solution()
+        worst = self.Worst_solution()
+        mutation_probability = mut_prob
+        k = 0
+        while k < max_iterations or worst.obj_fun_value - best.obj_fun_value > tolerance:  # Genera nuove soluzioni finché il peggior individuo della
+            # popolazione non dista meno di "tolerance" dal peggiore
+            k += 1
             # Effettua una possibile mutazione
             seed(time.time())
             p = random.uniform(0, 1)
@@ -245,37 +451,48 @@ class Algoritmo_genetico:
                 # effettua una mutazione
                 index_cavy = random.randint(0, len(self.population) - 1)
                 if self.population[index_cavy] != best:
-                    parent_mut = self.__mutation(self.population[index_cavy], 10)
-                    if parent_mut.is_admissible() == 1:
-                        self.population[index_cavy].copy(parent_mut)
+                    #parent_mut = self.__Mutation(self.population[index_cavy], mut_dim)
+                    parent_mut = self.__Simple_mutation(self.population[index_cavy], mut_dim)
+                    if parent_mut.Is_admissible() == 1:
+                        self.population[index_cavy].Copy(parent_mut)
                         #print("Mutazione avvenuta")
                     #else:
                         #print("Mutazione non avvenuta")
 
-            # Estrai con la simulazione montecarlo gli indici di due genitori dalla popolazione
+            ## Estrazione con la simulazione montecarlo degli indici dei due genitori dalla popolazione
             (index_parent1, index_parent2) = self.__Montecarlo_simulation()
+            # Estrazione con la simulazione Torneo degli indici dei due genitori dalla popolazione
+            #(index_parent1, index_parent2) = self.__Tournament_simulation()
+
+            ##Estrazione Casuale
+            #index_parent2 = 0
+            #index_parent1 = 0
+            #while index_parent1 == index_parent2:
+             #   index_parent1 = random.randint(0, len(self.population) - 1)
+              #  index_parent2 = random.randint(0, len(self.population) - 1)
 
             # Crossover tra i due genitori
-            (child_1, child_2) = self.__BCRC(self.population[index_parent1], self.population[index_parent2], 10)
+            (child_1, child_2) = self.__BCRC(self.population[index_parent1], self.population[index_parent2], crossover_dim)
+            # (child_1, child_2) = self.__Double_crossover(self.population[index_parent1], self.population[index_parent2], 10)
 
             # Estrazione delle 2 soluzioni peggiori, eventualmente da sostituire
-            (index_worst1, index_worst2) = self.__two_worst_solutions()
+            (index_worst1, index_worst2) = self.__Two_Worst_solutions()
 
             # Aggiornamento della popolazione con i nuovi individui, se vantaggioso
-            outcome = self.__update_population(index_worst1, index_worst2, child_1, child_2)
+            outcome = self.__Update_population(index_worst1, index_worst2, child_1, child_2)
 
             if outcome == 1:
                 print("Generate due soluzioni inammissibili")
 
             # Calcolo la nuova soluzione migliore e la nuova soluzione peggiore
-            best = self.best_solution()
-            worst = self.worst_solution()
+            best = self.Best_solution()
+            worst = self.Worst_solution()
 
-        return self.best_solution()
+        return self.Best_solution()
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def __compute_cumulative_fitness(self, lista_fitness):
+    # Generazione della lista di fitness cumulate utile alla simulazione Montecarlo
+    def __Compute_cumulative_fitness(self, lista_fitness):
 
         cumulative_fitness = []
         F = sum(lista_fitness)
@@ -286,9 +503,9 @@ class Algoritmo_genetico:
         return cumulative_fitness
 
 # ----------------------------------------------------------------------------------------------------------------------
-
+    #Simulazione Montecarlo
     def __Montecarlo_simulation(self):
-        cumulative_fitness = self.__compute_cumulative_fitness([k.fitness for k in self.population])
+        cumulative_fitness = self.__Compute_cumulative_fitness([k.fitness for k in self.population])
         #  for i in range(len(cumulative_fitness)):
         #     print(i," ", cumulative_fitness[i])
 
@@ -315,7 +532,32 @@ class Algoritmo_genetico:
         return index_a, index_b
 
 # ----------------------------------------------------------------------------------------------------------------------
+    # Simulazione Torneo
+    def __Tournament_simulation(self):
+        index = [0,0]
 
+        for i in range(2):
+            tmp_index1 = 0
+            tmp_index2 = 0
+            tmp_index3 = 0
+            tmp_index4 = 0
+            tmp_index5 = 0
+
+            while tmp_index1 == tmp_index2 or tmp_index2 == tmp_index3 or tmp_index3 == tmp_index4 or tmp_index4 == tmp_index5:
+                seed(datetime.now().time().microsecond)
+                tmp_index1 = random.randint(0, len(self.population)-1)
+                tmp_index2 = random.randint(0, len(self.population)-1)
+                tmp_index3 = random.randint(0, len(self.population)-1)
+                tmp_index4 = random.randint(0, len(self.population)-1)
+                tmp_index5 = random.randint(0, len(self.population)-1)
+
+            tmp_population = [self.population[tmp_index1], self.population[tmp_index2], self.population[tmp_index3], self.population[tmp_index4], self.population[tmp_index5]]
+            index[i] = self.population.index(min(tmp_population, key=lambda item: item.obj_fun_value))
+
+        return index[0], index[1]
+
+# ----------------------------------------------------------------------------------------------------------------------
+    # Best Cost Route Crossover (revisionato)
     def __BCRC(self, solution1, solution2, range):  # Crossover
 
         # Seed per le funzioni randomiche
@@ -386,8 +628,8 @@ class Algoritmo_genetico:
         return new_solution1, new_solution2
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def __double_crossover(self, sol1, sol2, r):
+    # Crossover TSP
+    def __Double_crossover(self, sol1, sol2, r):
         # Seed per le funzioni randomiche
         seed(time.time())
         # Si rimuove il deposito dai genitori
@@ -445,8 +687,8 @@ class Algoritmo_genetico:
         return new_sol1, new_sol2
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def __mutation(self, sol, r):
+    # Mutazione a blocco : inversione del blocco
+    def __Mutation(self, sol, r):
         seed(time.time())
 
         # Si rimuove il deposito dalla soluzione
@@ -465,8 +707,34 @@ class Algoritmo_genetico:
         return new_sol
 
 # ----------------------------------------------------------------------------------------------------------------------
+    # Mutazione a elemento : scambio di swap_count elementi
+    def __Simple_mutation(self, sol, swap_count):
 
-    def __two_worst_solutions(self):      # Ritorna gli indici delle 2 soluzioni con fitenss più bassa
+        # Si rimuove il deposito dalla soluzione
+        tmp_routes = [i.number for i in sol.routes if i.number != 0]
+        for _ in range(swap_count):
+            swap_index1 = 0
+            swap_index2 = 0
+
+            while swap_index1 == swap_index2:
+                seed(time.time())
+                swap_index1 = random.randint(0, len(tmp_routes) - 1)
+                swap_index2 =  random.randint(0, len(tmp_routes) - 1)
+
+            # Si invertono i due nodi
+            buff = tmp_routes[swap_index2]
+            tmp_routes[swap_index2] = tmp_routes[swap_index1]
+            tmp_routes[swap_index1] = buff
+
+        nodes = []
+        for i in tmp_routes:
+            nodes.append(self.instance.nodes[i])
+        new_sol = Solution(nodes, self.instance)
+        return new_sol
+
+# ----------------------------------------------------------------------------------------------------------------------
+    # Estrazione delle due soluzioni peggiori
+    def __Two_Worst_solutions(self):      # Ritorna gli indici delle 2 soluzioni con fitenss più bassa
         fitness = []
         for i in self.population:
             fitness.append(i.fitness)
@@ -474,8 +742,9 @@ class Algoritmo_genetico:
         return arg_sort[0],arg_sort[1]
 
 # ----------------------------------------------------------------------------------------------------------------------
+    # Aggiornamento della popolazione con new_sol_1 e new_sol_2
+    def __Update_population(self, index_old_sol_1, index_old_sol_2, new_sol_1, new_sol_2):
 
-    def __update_population(self, index_old_sol_1, index_old_sol_2, new_sol_1, new_sol_2):
 
         if self.population[index_old_sol_1].fitness > self.population[index_old_sol_2].fitness:
             index_worst_old = index_old_sol_2  # index_worst_old è la Solution migliore di quelle scelte per essere eliminate
@@ -484,8 +753,8 @@ class Algoritmo_genetico:
             index_worst_old = index_old_sol_1
             index_best_old = index_old_sol_2
 
-        sol1_acceptable = new_sol_1.is_admissible()
-        sol2_acceptable = new_sol_2.is_admissible()
+        sol1_acceptable = new_sol_1.Is_admissible()
+        sol2_acceptable = new_sol_2.Is_admissible()
 
         if sol1_acceptable and sol2_acceptable:
 
@@ -502,44 +771,49 @@ class Algoritmo_genetico:
 
             else:
                 if best_new.fitness > self.population[index_best_old].fitness and worst_new.fitness > self.population[index_worst_old].fitness:
-                    self.population[index_best_old].copy(best_new)
-                    self.population[index_worst_old].copy(worst_new)
+                    self.population[index_best_old].Copy(best_new)
+                    self.population[index_worst_old].Copy(worst_new)
+                    #if new_sol_1.admissible or new_sol_2.admissible:
+                     #   print("Aggiunta soluzione inammissibile ")
 
                 elif worst_new.fitness <= self.population[index_worst_old].fitness:
-                    self.population[index_worst_old].copy(best_new)
-
+                    self.population[index_worst_old].Copy(best_new)
+                    #if worst_new.admissible :
+                     #   print("Aggiunta soluzione inammissibile ")
                 return 0
 
         elif sol1_acceptable:
 
             if new_sol_1.fitness > self.population[index_worst_old].fitness:
-                self.population[index_worst_old].copy(new_sol_1)
-
+                self.population[index_worst_old].Copy(new_sol_1)
+                #if new_sol_1.admissible:
+                 #   print("Aggiunta soluzione inammissibile ")
             return 0
 
         elif sol2_acceptable:
 
             if new_sol_2.fitness > self.population[index_worst_old].fitness:
-                self.population[index_worst_old].copy(new_sol_2)
-
+                self.population[index_worst_old].Copy(new_sol_2)
+                #if new_sol_2.admissible:
+                 #   print("Aggiunta soluzione inammissibile ")
             return 0
 
         else:
             return 1
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def worst_solution(self):                   # Ritorna la Solution della population con fitness più bassa
+    # Estrazione della soluzione peggiore della popolazione
+    def Worst_solution(self):                   # Ritorna la Solution della population con fitness più bassa
         return max(self.population, key=lambda item: item.obj_fun_value)
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def best_solution(self):                    # Ritorna la Solution della population con fitness più alta
+    # Estrazione della soluzione migliore della popolazione
+    def Best_solution(self):                    # Ritorna la Solution della population con fitness più alta
         return min(self.population, key=lambda item: item.obj_fun_value)
 
 # ----------------------------------------------------------------------------------------------------------------------
-
-    def graph_solution(self, solution):
+    # Grafico nodi-archi della soluzione passata come parametro
+    def Graph_solution(self, solution):
 
         Graph = nx.DiGraph()
         list_nodes = list(range(self.instance.nodes_num))
@@ -552,10 +826,9 @@ class Algoritmo_genetico:
             coordinates[i] = self.instance.nodes[i].coordinate
 
         nx.draw_networkx(Graph, coordinates, font_size=8, font_color='k', node_color='green', edgecolors='k',
-                         node_size=200)
+                         node_size=300)
         nx.draw_networkx_edges(Graph, coordinates, arrowsize=7, arrowstyle='->', edge_color='black')
 
         plt.show()
 
         return 0
-
