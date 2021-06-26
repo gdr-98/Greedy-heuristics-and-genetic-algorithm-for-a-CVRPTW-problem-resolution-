@@ -4,8 +4,6 @@ file = "..\Homberger\C1_2_1.TXT"
 #file = "..\Solomon\C101.txt"
 istanza = lib.CVRPTW(file)
 
-# ---------------------------Generazione della popolazione di soluzioni iniziali ------------------------------
-
 def main():
 
     print(istanza)
