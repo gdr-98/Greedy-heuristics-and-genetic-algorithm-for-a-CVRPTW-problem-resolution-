@@ -536,23 +536,24 @@ class Algoritmo_genetico:
     def __Tournament_simulation(self):
         index = [0,0]
 
-        for i in range(2):
-            tmp_index1 = 0
-            tmp_index2 = 0
-            tmp_index3 = 0
-            tmp_index4 = 0
-            tmp_index5 = 0
+        while index[0] == index[1]:
+            for i in range(2):
+                tmp_index1 = 0
+                tmp_index2 = 0
+                tmp_index3 = 0
+                tmp_index4 = 0
+                tmp_index5 = 0
 
-            while tmp_index1 == tmp_index2 or tmp_index2 == tmp_index3 or tmp_index3 == tmp_index4 or tmp_index4 == tmp_index5:
-                seed(datetime.now().time().microsecond)
-                tmp_index1 = random.randint(0, len(self.population)-1)
-                tmp_index2 = random.randint(0, len(self.population)-1)
-                tmp_index3 = random.randint(0, len(self.population)-1)
-                tmp_index4 = random.randint(0, len(self.population)-1)
-                tmp_index5 = random.randint(0, len(self.population)-1)
+                while tmp_index1 == tmp_index2 or tmp_index2 == tmp_index3 or tmp_index3 == tmp_index4 or tmp_index4 == tmp_index5:
+                    seed(datetime.now().time().microsecond)
+                    tmp_index1 = random.randint(0, len(self.population)-1)
+                    tmp_index2 = random.randint(0, len(self.population)-1)
+                    tmp_index3 = random.randint(0, len(self.population)-1)
+                    tmp_index4 = random.randint(0, len(self.population)-1)
+                    tmp_index5 = random.randint(0, len(self.population)-1)
 
-            tmp_population = [self.population[tmp_index1], self.population[tmp_index2], self.population[tmp_index3], self.population[tmp_index4], self.population[tmp_index5]]
-            index[i] = self.population.index(min(tmp_population, key=lambda item: item.obj_fun_value))
+                tmp_population = [self.population[tmp_index1], self.population[tmp_index2], self.population[tmp_index3], self.population[tmp_index4], self.population[tmp_index5]]
+                index[i] = self.population.index(min(tmp_population, key=lambda item: item.obj_fun_value))
 
         return index[0], index[1]
 
@@ -744,7 +745,6 @@ class Algoritmo_genetico:
 # ----------------------------------------------------------------------------------------------------------------------
     # Aggiornamento della popolazione con new_sol_1 e new_sol_2
     def __Update_population(self, index_old_sol_1, index_old_sol_2, new_sol_1, new_sol_2):
-
 
         if self.population[index_old_sol_1].fitness > self.population[index_old_sol_2].fitness:
             index_worst_old = index_old_sol_2  # index_worst_old è la Solution migliore di quelle scelte per essere eliminate
