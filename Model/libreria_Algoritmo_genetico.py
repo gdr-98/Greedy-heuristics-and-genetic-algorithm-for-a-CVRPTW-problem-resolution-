@@ -135,7 +135,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Generazione della popolazione iniziale di soluzioni ordinando per somma : deadline+tempo di spostamento
-    def Gen_starting_population_NF_EDF(self, pop_dim = 50, sol_quality = 10):
+    def Gen_starting_population_(self, pop_dim = 50, randomness = 10):
 
         # Salvataggio della lista di nodi del grafo (non ordinata)
         unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
@@ -164,7 +164,7 @@ class Algoritmo_genetico:
 
             while stop == 0:
                 if buff_truck:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + sol_quality) == 0 :    # Ogni sol_count + sol_quality nodi aggiunti si sceglie
+                    if j % (sol_count + randomness) == 0 :    # Ogni sol_count + sol_quality nodi aggiunti si sceglie
                         next_node = choice(buff_truck)                      # casualmente il prossimo nodo da analizzare
                     else:
                         min_distance_time = 1000000000
@@ -229,7 +229,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Generazione della popolazione iniziale di soluzioni ordinando per tempo di spostamento più basso
-    def Gen_starting_population_NF(self, pop_dim=50, sol_quality=10):  # Generazione della popolazione iniziale di soluzioni
+    def Gen_starting_population_NF(self, pop_dim=50, randomness = 10):  # Generazione della popolazione iniziale di soluzioni
 
         # Salvataggio della lista di nodi del grafo (non ordinata)
         unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
@@ -258,7 +258,7 @@ class Algoritmo_genetico:
 
             while stop == 0:
                 if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + sol_quality) == 0:  # Ogni sol_count + sol_quality nodi aggiunti si sceglie
+                    if j % (sol_count + randomness) == 0:  # Ogni sol_count + sol_quality nodi aggiunti si sceglie
                         next_node = choice(buff_truck)  # casualmente il prossimo nodo da analizzare
                     else:
                         min_distance_time = 1000000000
@@ -329,7 +329,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Generazione della popolazione iniziale di soluzioni ordinando per deadline più imminente
-    def Gen_starting_population_EDF(self, pop_dim, ran):  # Generazione della popolazione iniziale di soluzioni (50 soluzioni)
+    def Gen_starting_population_EDF(self, pop_dim = 50, randomness = 5):  # Generazione della popolazione iniziale di soluzioni (50 soluzioni)
 
         # Salvataggio della lista di nodi del grafo (non ordinata)
         unsorted_nodes = self.instance.nodes
@@ -372,7 +372,7 @@ class Algoritmo_genetico:
 
             while stop == 0:
                 if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + ran) == 0:  # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
+                    if j % (sol_count + randomness) == 0:  # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
                         next_node = choice(buff_truck)
                     else:
                         next_node = buff_truck[
@@ -534,7 +534,7 @@ class Algoritmo_genetico:
 # ----------------------------------------------------------------------------------------------------------------------
     # Simulazione Torneo
     def __Tournament_simulation(self):
-        index = [0,0]
+        index = [0, 0]
 
         while index[0] == index[1]:
             for i in range(2):
@@ -552,7 +552,7 @@ class Algoritmo_genetico:
                     tmp_index4 = random.randint(0, len(self.population)-1)
                     tmp_index5 = random.randint(0, len(self.population)-1)
 
-                tmp_population = [self.population[tmp_index1], self.population[tmp_index2], self.population[tmp_index3], self.population[tmp_index4], self.population[tmp_index5]]
+                tmp_population = [self.population[tmp_index1], self.population[tmp_index2], self.population[tmp_index3],self.population[tmp_index4], self.population[tmp_index5]]
                 index[i] = self.population.index(min(tmp_population, key=lambda item: item.obj_fun_value))
 
         return index[0], index[1]
