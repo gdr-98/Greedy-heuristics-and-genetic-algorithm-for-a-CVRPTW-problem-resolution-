@@ -135,7 +135,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Generazione della popolazione iniziale di soluzioni ordinando per somma : deadline+tempo di spostamento
-    def Gen_starting_population_(self, pop_dim = 50, randomness = 10):
+    def Gen_starting_population_MDPDF(self, pop_dim = 50, randomness = 10):
 
         # Salvataggio della lista di nodi del grafo (non ordinata)
         unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
