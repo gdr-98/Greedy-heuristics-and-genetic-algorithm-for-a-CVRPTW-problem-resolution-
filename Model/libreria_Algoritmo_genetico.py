@@ -229,7 +229,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Generazione della popolazione iniziale di soluzioni ordinando per tempo di spostamento più basso
-    def Gen_starting_population_NF(self, pop_dim=50, randomness = 10):  # Generazione della popolazione iniziale di soluzioni
+    def Gen_starting_population_NF(self, pop_dim=50, randomness = 10):  
 
         # Salvataggio della lista di nodi del grafo (non ordinata)
         unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
@@ -329,7 +329,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Generazione della popolazione iniziale di soluzioni ordinando per deadline più imminente
-    def Gen_starting_population_EDF(self, pop_dim = 50, randomness = 5):  # Generazione della popolazione iniziale di soluzioni (50 soluzioni)
+    def Gen_starting_population_EDF(self, pop_dim = 50, randomness = 5):  
 
         # Salvataggio della lista di nodi del grafo (non ordinata)
         unsorted_nodes = self.instance.nodes
