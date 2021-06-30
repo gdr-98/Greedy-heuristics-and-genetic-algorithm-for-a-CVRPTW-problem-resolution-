@@ -19,7 +19,10 @@ class Solution:
         self.truck_count = trucks
         self.obj_fun_value = self.Compute_obj_fun_value(cvrptw_instance.distances)
         self.fitness = 1/self.obj_fun_value
-        self.admissible = 1
+        if trucks <= self.instance.num_vehicle:
+            self.admissible = 1
+        else:
+            self.admissible = 0
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Calcolo del valore della funzione obiettivo per la soluzione in questione
