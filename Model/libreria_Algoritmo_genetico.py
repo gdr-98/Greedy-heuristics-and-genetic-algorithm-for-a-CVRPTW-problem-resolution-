@@ -141,7 +141,7 @@ class Algoritmo_genetico:
         unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
 
         # Inizializzazione variabili
-        current_node = 0            # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
+        current_node = 0            # Ultimo nodo aggiunto al percorso corrente  (si parte sempre dal nodo deposito)
         current_time = 0            # Tempo trascorso per arruvare al current_node
         remaining_capacity = self.instance.capacity     # Capacità rimanente del camion (il camion parte con capacità massima)
         route = [self.instance.nodes[0]]             # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
@@ -164,10 +164,10 @@ class Algoritmo_genetico:
 
             while stop == 0:
                 if buff_truck:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + randomness) == 0 :    # Ogni sol_count + sol_quality nodi aggiunti si sceglie
+                    if j % (sol_count + randomness) == 0 :    # Ogni sol_count + randomness nodi aggiunti si sceglie
                         next_node = choice(buff_truck)                      # casualmente il prossimo nodo da analizzare
                     else:
-                        min_distance_time = 1000000000
+                        min_distance_time = 1000000000  #Upper bound per il settaggio iniziale della distanza minima 
                         for i in buff_truck:
                             if self.instance.distances[current_node, i.number] + i.due_date < min_distance_time:
                                 index_best_choice = i.number
@@ -231,12 +231,12 @@ class Algoritmo_genetico:
     # Generazione della popolazione iniziale di soluzioni ordinando per tempo di spostamento più basso
     def Gen_starting_population_NF(self, pop_dim=50, randomness = 10):  
 
-        # Salvataggio della lista di nodi del grafo (non ordinata)
+        # Salvataggio della lista di nodi del grafo 
         unsorted_nodes = self.instance.nodes[0:self.instance.nodes_num]
 
         # Inizializzazione variabili
-        current_node = 0  # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
-        current_time = 0  # Tempo trascorso per arruvare al current_node
+        current_node = 0  # Ultimo nodo aggiunto al percorso corrente  (si parte sempre dal nodo deposito)
+        current_time = 0  # Tempo trascorso per arrivare al current_node
         remaining_capacity = self.instance.capacity  # Capacità rimanente del camion (il camion parte con capacità massima)
         route = [self.instance.nodes[0]]  # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
 
@@ -258,53 +258,46 @@ class Algoritmo_genetico:
 
             while stop == 0:
                 if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + randomness) == 0:  # Ogni sol_count + sol_quality nodi aggiunti si sceglie
+                    if j % (sol_count + randomness) == 0:  # Ogni sol_count + randomness nodi aggiunti si sceglie
                         next_node = choice(buff_truck)  # casualmente il prossimo nodo da analizzare
                     else:
-                        min_distance_time = 1000000000
+                        min_distance_time = 1000000000      #Upper bound per il settaggio iniziale della distanza minima 
                         for i in buff_truck:
                             if self.instance.distances[current_node, i.number] < min_distance_time:
                                 index_nearest_node = i.number
                                 min_distance_time = self.instance.distances[current_node, i.number]
                         next_node = self.instance.nodes[index_nearest_node]
 
-                    if next_node.demand <= remaining_capacity and (
-                            current_time + self.instance.travel_times[
-                        current_node, next_node.number]) <= next_node.due_date:
+                    if next_node.demand <= remaining_capacity and (current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.due_date:
                         # Il nodo può essere aggiunto al percorso se non richiede più capacità di quella rimasta e se è
                         # possibile spostarsi in esso dal nodo corrente senza superare la sua due date
 
                         route.append(next_node)  # Aggiungo il nodo al percorso del camion
-                        buff_truck.remove(
-                            next_node)  # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
+                        buff_truck.remove(next_node)  # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
                         nodes_left.remove(next_node)
 
                         remaining_capacity = remaining_capacity - next_node.demand  # Aggiornamento capacità
 
-                        if (current_time + self.instance.travel_times[
-                            current_node, next_node.number]) <= next_node.rdy_time:
+                        if (current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.rdy_time:
                             current_time = next_node.rdy_time + next_node.service_time  # Se arrivo nel next_node prima
                             # del suo ready time dovrò aspettare il ready time per servirlo quindi potrò lasciare il next_node
                             # al tempo : ready_time del next node + tempo di servizio del next_node
 
                         else:
-                            current_time = current_time + self.instance.travel_times[
-                                current_node, next_node.number] + next_node.service_time
+                            current_time = current_time + self.instance.travel_times[current_node, next_node.number] + next_node.service_time
                             # Se arrivo dopo il ready time posso iniziare subito a servire il nodo
-
+                            
                         current_node = next_node.number  # Aggiornamento nodo corrente
                         j = j + 1  # Aggiornamento parametro per scelta casuale
                     else:
-                        buff_truck.remove(
-                            next_node)  # Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
+                        buff_truck.remove(next_node)  # Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
                         # lista buff_truck, tale nodo sarà raggiunto da qualche altro camion
 
                 else:
                     # Se buff_truck è vuoto vuol dire che il camion attuale non può coprire nessun altro nodo quindi dovrà
                     # tornare nel deposito
                     route.append(self.instance.nodes[0])
-                    routes.append(
-                        route[0:len(route)])  # Aggiungo il percorso all'insieme di percorsi rappresentante la Solution
+                    routes.append(route[0:len(route)])  # Aggiungo il percorso all'insieme di percorsi rappresentante la Solution
                     route = []  # Ripristino la lista route (riparto dal deposito con un nuovo camion)
                     truck_count = truck_count + 1  # Aggiornamento numero camion
                     current_time = 0  # Ripristino current_node
@@ -349,7 +342,7 @@ class Algoritmo_genetico:
                 static_sorted.append(unsorted_nodes[i])
 
         # Inizializzazione variabili
-        current_node = 0  # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
+        current_node = 0  # Ultimo nodo aggiunto al percorso corrente  (si parte sempre dal nodo deposito)
         current_time = 0  # Tempo trascorso per arruvare al current_node
         remaining_capacity = self.instance.capacity  # Capacità rimanente del camion (il camion parte con capacità massima)
         route = [unsorted_nodes[0]]  # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
@@ -372,40 +365,33 @@ class Algoritmo_genetico:
 
             while stop == 0:
                 if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
-                    if j % (sol_count + randomness) == 0:  # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
+                    if j % (sol_count + randomness) == 0:  # Ogni sol_count + randomness nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
                         next_node = choice(buff_truck)
                     else:
-                        next_node = buff_truck[
-                            0]  # Le restanti volte il nodo da analizzare è quello con due date più imminente
+                        next_node = buff_truck[0]  # Le restanti volte il nodo da analizzare è quello con due date più imminente
 
-                    if next_node.demand <= remaining_capacity and (
-                            current_time + self.instance.travel_times[
-                        current_node, next_node.number]) <= next_node.due_date:
+                    if next_node.demand <= remaining_capacity and (current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.due_date:
                         # Il nodo può essere aggiunto al percorso se non richiede più capacità di quella rimasta e se è
                         # possibile spostarsi in esso dal nodo corrente senza superare la sua due date
 
                         route.append(next_node)  # Aggiungo il nodo al percorso del camion
-                        buff_truck.remove(
-                            next_node)  # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
+                        buff_truck.remove(next_node)  # Il nodo è stato raggiunto quindi va eliminato da buff_truck e nodes_left
                         nodes_left.remove(next_node)
                         remaining_capacity = remaining_capacity - next_node.demand  # Aggiornamento capacità
-                        if (current_time + self.instance.travel_times[
-                            current_node, next_node.number]) <= next_node.rdy_time:
+                        if (current_time + self.instance.travel_times[current_node, next_node.number]) <= next_node.rdy_time:
                             current_time = next_node.rdy_time + next_node.service_time  # Se arrivo nel next_node prima
                             # del suo ready time dovrò aspettare il ready time per servirlo quindi potrò lasciare il next_node
                             # al tempo : ready_time del next node + tempo di servizio del next_node
 
                         else:
-                            current_time = current_time + self.instance.travel_times[
-                                current_node, next_node.number] + next_node.service_time
+                            current_time = current_time + self.instance.travel_times[current_node, next_node.number] + next_node.service_time
                             # Se arrivo dopo il ready time posso iniziare subito a servire il nodo
 
                         current_node = next_node.number  # Aggiornamento nodo corrente
                         j = j + 1  # Aggiornamento parametro per scelta casuale
 
                     else:
-                        buff_truck.remove(
-                            next_node)  # Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
+                        buff_truck.remove(next_node)  # Se il nodo non è raggiungibile dal camion attuale lo elimino dalla
                         # lista buff_truck, tale nodo sarà raggiunto da qualche altro camion
                 else:
                     # Se buff_truck è vuoto vuol dire che il camion attuale non può coprire nessun altro nodo quindi dovrà
