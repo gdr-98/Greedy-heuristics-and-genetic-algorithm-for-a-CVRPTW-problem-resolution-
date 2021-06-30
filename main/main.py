@@ -10,7 +10,7 @@ def main():
     #X,U,A= istanza.optimize()
     #istanza.print_solution(X)
     test = gen.Algoritmo_genetico(istanza)
-    popolazione = test.Gen_starting_population_NF_EDF(50,5)
+    popolazione = test.Gen_starting_population_MDPDF(50,5)
     #popolazione = test.Gen_starting_population_NF(50, 5)
     #popolazione = test.Gen_starting_populationEDF(50, 5)
     best = test.Best_solution()
