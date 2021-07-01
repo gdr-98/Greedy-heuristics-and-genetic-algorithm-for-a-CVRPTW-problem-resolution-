@@ -18,11 +18,14 @@ class Solution:
         self.routes = routes_row[0:len(routes_row)]
         self.truck_count = trucks
         self.obj_fun_value = self.Compute_obj_fun_value(cvrptw_instance.distances)
-        self.fitness = 1/self.obj_fun_value
+        
         if trucks <= self.instance.num_vehicle:
             self.admissible = 1
         else:
             self.admissible = 0
+            self.obj_fun_value += 100 * (trucks - self.instance.num_vehicle)
+        
+        self.fitness = 1 / self.obj_fun_value
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Calcolo del valore della funzione obiettivo per la soluzione in questione
