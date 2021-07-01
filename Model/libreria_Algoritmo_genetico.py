@@ -425,12 +425,12 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Avvio dell'algoritmo genetico
-    def Start_algorithm(self, tolerance, max_iterations = 200, mut_prob = 0.5, mut_dim = 20, crossover_dim = 20 ):
+    def Start_algorithm(self, tolerance, min_iterations = 200, mut_prob = 0.5, mut_dim = 20, crossover_dim = 20 ):
         best = self.Best_solution()
         worst = self.Worst_solution()
         mutation_probability = mut_prob
         k = 0
-        while k < max_iterations or worst.obj_fun_value - best.obj_fun_value > tolerance:  # Genera nuove soluzioni finché il peggior individuo della
+        while k < min_iterations or worst.obj_fun_value - best.obj_fun_value > tolerance:  # Genera nuove soluzioni finché il peggior individuo della
             # popolazione non dista meno di "tolerance" dal peggiore
             k += 1
             # Effettua una possibile mutazione
