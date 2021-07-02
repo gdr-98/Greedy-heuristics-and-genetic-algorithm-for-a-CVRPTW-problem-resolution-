@@ -153,9 +153,6 @@ class Algoritmo_genetico:
         route = [self.instance.nodes[0]]             # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
         j = 0                       # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
 
-        now = datetime.now().time().microsecond
-        seed(now)
-
         # Ciclo for : ogni iterazione genera una Solution nuova
         for sol_count in range(pop_dim):
             routes = []         # Routes è la lista contente i percorsi dei vari camion quindi la Solution effettiva
@@ -171,7 +168,8 @@ class Algoritmo_genetico:
             while stop == 0:
                 if buff_truck:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
                     if j % (sol_count + randomness) == 0 :    # Ogni sol_count + randomness nodi aggiunti si sceglie
-                        next_node = choice(buff_truck)                      # casualmente il prossimo nodo da analizzare
+                        seed(time.time())                     # casualmente il prossimo nodo da analizzare
+                        next_node = choice(buff_truck)                     
                     else:
                         min_distance_time = 1000000000  #Upper bound per il settaggio iniziale della distanza minima 
                         for i in buff_truck:
@@ -247,8 +245,6 @@ class Algoritmo_genetico:
         route = [self.instance.nodes[0]]  # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
 
         j = 0  # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
-        now = datetime.now().time().microsecond
-        seed(now)
 
         # Ciclo for : ogni iterazione genera una Solution nuova
         for sol_count in range(pop_dim):
@@ -265,7 +261,8 @@ class Algoritmo_genetico:
             while stop == 0:
                 if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
                     if j % (sol_count + randomness) == 0:  # Ogni sol_count + randomness nodi aggiunti si sceglie
-                        next_node = choice(buff_truck)  # casualmente il prossimo nodo da analizzare
+                        seed(time.time())                  # casualmente il prossimo nodo da analizzare
+                        next_node = choice(buff_truck)  
                     else:
                         min_distance_time = 1000000000      #Upper bound per il settaggio iniziale della distanza minima 
                         for i in buff_truck:
@@ -354,9 +351,6 @@ class Algoritmo_genetico:
         route = [unsorted_nodes[0]]  # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
         j = 0  # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
 
-        now = datetime.now().time().microsecond
-        seed(now)
-
         # Ciclo for : ogni iterazione genera una Solution nuova
         for sol_count in range(pop_dim):
             routes = []  # Routes è la lista contente i percorsi dei vari camion quindi la Solution effettiva
@@ -372,6 +366,7 @@ class Algoritmo_genetico:
             while stop == 0:
                 if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
                     if j % (sol_count + randomness) == 0:  # Ogni sol_count + randomness nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
+                        seed(time.time())                     
                         next_node = choice(buff_truck)
                     else:
                         next_node = buff_truck[0]  # Le restanti volte il nodo da analizzare è quello con due date più imminente
