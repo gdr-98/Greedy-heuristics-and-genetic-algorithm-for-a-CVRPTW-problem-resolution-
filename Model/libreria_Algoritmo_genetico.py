@@ -18,13 +18,7 @@ class Solution:
         self.routes = routes_row[0:len(routes_row)]
         self.truck_count = trucks
         self.obj_fun_value = self.Compute_obj_fun_value(cvrptw_instance.distances)
-
-        if trucks <= self.instance.num_vehicle:
-            self.admissible = 1
-        else:
-            self.admissible = 0
-            self.obj_fun_value += 100 * (trucks - self.instance.num_vehicle)
-
+        self.admissible = self.Check_admissible()
         self.fitness = 1 / self.obj_fun_value
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -37,8 +31,8 @@ class Solution:
         return obj_fun_val
 
 # ----------------------------------------------------------------------------------------------------------------------
-    # Verifica dell'ammissibilità della funzione
-    def Is_admissible(self):
+    # Aggiunge il deposito alla stringa percorso e ricalcola la fitness
+    def Add_storage(self):
         # Attenzione!
         # Funziona solo con Solution da cui è stato rimosso il deposito (nodo 0)
         # Se bisogna usarla per soluzioni con 0, è necessario inserire un controllo all'inizio
@@ -84,21 +78,21 @@ class Solution:
         # Condizione di ammissibilità = numero di camion minore al numero consentito
         self.routes.append(self.instance.nodes[0])
         truck_number += 1
+        self.truck_count = truck_number
+        self.obj_fun_value = self.Compute_obj_fun_value(self.instance.distances)
+        self.admissible = self.Check_admissible()
+        self.fitness = 1/self.obj_fun_value
 
-        if truck_number > self.instance.num_vehicle:
+        return 0
+
+# ----------------------------------------------------------------------------------------------------------------------
+    # Verifica dell'ammissibilità della funzione
+    def Check_admissible(self):
+        if self.truck_count <= self.instance.num_vehicle:
             admissible = 1
-            self.admissible = 0
-            self.truck_count = truck_number
-            self.obj_fun_value = self.Compute_obj_fun_value(self.instance.distances) + 100*(truck_number - self.instance.num_vehicle)
-            self.fitness = 1/self.obj_fun_value
-
         else:
-            self.truck_count = truck_number
-            self.obj_fun_value = self.Compute_obj_fun_value(self.instance.distances)
-            self.fitness = 1/self.obj_fun_value
-            self.admissible = 1
-            admissible = 1
-
+            admissible = 0
+            self.obj_fun_value += 300 * (self.truck_count - self.instance.num_vehicle)
         return admissible
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -457,7 +451,7 @@ class Algoritmo_genetico:
                 if self.population[index_cavy] != best:
                     #parent_mut = self.__Inversion_mutation(self.population[index_cavy], mut_dim)
                     parent_mut = self.__Swap_mutation(self.population[index_cavy], mut_dim)
-                    if parent_mut.Is_admissible() == 1:
+                    if parent_mut.admissible == 1:
                         self.population[index_cavy].Copy(parent_mut)
                         #print("Mutazione avvenuta")
                     #else:
@@ -627,7 +621,9 @@ class Algoritmo_genetico:
             tmp_routes2.insert(index_min + 1, j)
 
         new_solution1 = Solution(tmp_routes1,self.instance)
+        new_solution1.Add_storage()
         new_solution2 = Solution(tmp_routes2,self.instance)
+        new_solution2.Add_storage()
 
         return new_solution1, new_solution2
 
@@ -688,6 +684,9 @@ class Algoritmo_genetico:
             nodes.append(self.instance.nodes[i])
         new_sol2 = Solution(nodes, self.instance)
 
+        new_sol1.Add_storage()
+        new_sol2.Add_storage()
+
         return new_sol1, new_sol2
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -708,6 +707,9 @@ class Algoritmo_genetico:
         for i in tmp_routes:
             nodes.append(self.instance.nodes[i])
         new_sol = Solution(nodes, self.instance)
+
+        new_sol.Add_storage()
+
         return new_sol
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -734,6 +736,9 @@ class Algoritmo_genetico:
         for i in tmp_routes:
             nodes.append(self.instance.nodes[i])
         new_sol = Solution(nodes, self.instance)
+
+        new_sol.Add_storage()
+
         return new_sol
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -756,53 +761,53 @@ class Algoritmo_genetico:
             index_worst_old = index_old_sol_1
             index_best_old = index_old_sol_2
 
-        sol1_acceptable = new_sol_1.Is_admissible()
-        sol2_acceptable = new_sol_2.Is_admissible()
+        #if sol1_acceptable and sol2_acceptable:
 
-        if sol1_acceptable and sol2_acceptable:
+        if new_sol_1.fitness > new_sol_2.fitness:
+            best_new = new_sol_1                # best_new è la Solution migliore delle due scelte per essere inserite
+            worst_new = new_sol_2               # worst_new è la Solution migliore delle due scelte per essere inserite
+        else:
+            best_new = new_sol_2
+            worst_new = new_sol_1
 
-            if new_sol_1.fitness > new_sol_2.fitness:
-                best_new = new_sol_1                # best_new è la Solution migliore delle due scelte per essere inserite
-                worst_new = new_sol_2               # worst_new è la Solution migliore delle due scelte per essere inserite
-            else:
-                best_new = new_sol_2
-                worst_new = new_sol_1
-
-            if best_new.fitness <= self.population[index_worst_old].fitness:  # Se la peggiore delle soluzioni da rimuovere
-                # ha una fitness migliore della migliore delle soluzioni nuove allora non si possono effettuare scambi
-                return 0
-
-            else:
-                if best_new.fitness > self.population[index_best_old].fitness and worst_new.fitness > self.population[index_worst_old].fitness:
-                    self.population[index_best_old].Copy(best_new)
-                    self.population[index_worst_old].Copy(worst_new)
-                    #if new_sol_1.admissible or new_sol_2.admissible:
-                     #   print("Aggiunta soluzione inammissibile ")
-
-                elif worst_new.fitness <= self.population[index_worst_old].fitness:
-                    self.population[index_worst_old].Copy(best_new)
-                    #if worst_new.admissible :
-                     #   print("Aggiunta soluzione inammissibile ")
-                return 0
-
-        elif sol1_acceptable:
-
-            if new_sol_1.fitness > self.population[index_worst_old].fitness:
-                self.population[index_worst_old].Copy(new_sol_1)
-                #if new_sol_1.admissible:
-                 #   print("Aggiunta soluzione inammissibile ")
-            return 0
-
-        elif sol2_acceptable:
-
-            if new_sol_2.fitness > self.population[index_worst_old].fitness:
-                self.population[index_worst_old].Copy(new_sol_2)
-                #if new_sol_2.admissible:
-                 #   print("Aggiunta soluzione inammissibile ")
+        if best_new.fitness <= self.population[index_worst_old].fitness:  # Se la peggiore delle soluzioni da rimuovere
+            # ha una fitness migliore della migliore delle soluzioni nuove allora non si possono effettuare scambi
             return 0
 
         else:
-            return 1
+            if best_new.fitness > self.population[index_best_old].fitness and worst_new.fitness > self.population[index_worst_old].fitness:
+                self.population[index_best_old].Copy(best_new)
+                self.population[index_worst_old].Copy(worst_new)
+                #if new_sol_1.admissible or new_sol_2.admissible:
+                 #   print("Aggiunta soluzione inammissibile ")
+
+            elif worst_new.fitness <= self.population[index_worst_old].fitness:
+                self.population[index_worst_old].Copy(best_new)
+                #if worst_new.admissible :
+                 #   print("Aggiunta soluzione inammissibile ")
+            return 0
+
+        return 1
+
+        """
+            elif sol1_acceptable:
+    
+                if new_sol_1.fitness > self.population[index_worst_old].fitness:
+                    self.population[index_worst_old].Copy(new_sol_1)
+                    #if new_sol_1.admissible:
+                     #   print("Aggiunta soluzione inammissibile ")
+                return 0
+    
+            elif sol2_acceptable:
+    
+                if new_sol_2.fitness > self.population[index_worst_old].fitness:
+                    self.population[index_worst_old].Copy(new_sol_2)
+                    #if new_sol_2.admissible:
+                     #   print("Aggiunta soluzione inammissibile ")
+                return 0
+    
+            else:
+        """
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Estrazione della soluzione peggiore della popolazione
