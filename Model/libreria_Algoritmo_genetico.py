@@ -428,7 +428,7 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Avvio dell'algoritmo genetico
-    def Start_algorithm(self, tolerance, min_iterations = 200, mut_prob = 0.5, mut_dim = 20, crossover_dim = 20 ):
+    def Start_algorithm(self, tolerance = 20, min_iterations = 200, mut_prob = 0.5, mut_dim = 20, crossover_dim = 20 ):
         best = self.Best_solution()
         worst = self.Worst_solution()
         mutation_probability = mut_prob
@@ -465,7 +465,7 @@ class Algoritmo_genetico:
 
             # Crossover tra i due genitori
             (child_1, child_2) = self.__BCRC(self.population[index_parent1], self.population[index_parent2], crossover_dim)
-            # (child_1, child_2) = self.__Double_crossover(self.population[index_parent1], self.population[index_parent2], 10)
+            # (child_1, child_2) = self.__Double_crossover(self.population[index_parent1], self.population[index_parent2], crossover_dim)
 
             # Estrazione delle 2 soluzioni peggiori, eventualmente da sostituire
             (index_worst1, index_worst2) = self.__Two_Worst_solutions()
