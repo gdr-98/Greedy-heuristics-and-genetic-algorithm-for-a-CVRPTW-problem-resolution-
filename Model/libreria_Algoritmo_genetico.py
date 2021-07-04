@@ -160,7 +160,7 @@ class Algoritmo_genetico:
             # dalla lista nodes_left siccome un altro camion potrebbe raggiungerlo
 
             while stop == 0:
-                if buff_truck:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
+                if buff_truck and remaining_capacity > 0:          # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
                     if j % (sol_count + randomness) == 0 :    # Ogni sol_count + sol_quality nodi aggiunti si sceglie
                         seed(time.time())                     # casualmente il prossimo nodo da analizzare
                         next_node = choice(buff_truck)
@@ -255,7 +255,7 @@ class Algoritmo_genetico:
             # dalla lista nodes_left siccome un altro camion potrebbe raggiungerlo
 
             while stop == 0:
-                if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
+                if buff_truck and remaining_capacity > 0:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
                     if j % (sol_count + randomness) == 0:  # Ogni sol_count + sol_quality nodi aggiunti si sceglie
                         next_node = choice(buff_truck)  # casualmente il prossimo nodo da analizzare
                     else:
@@ -369,7 +369,7 @@ class Algoritmo_genetico:
             # dalla lista nodes_left siccome un altro camion potrebbe raggiungerlo
 
             while stop == 0:
-                if buff_truck:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
+                if buff_truck and remaining_capacity > 0:  # Se buff_truck non è vuoto = ci sono altri nodi analizzabili dal camion attuale
                     if j % (sol_count + randomness) == 0:  # Ogni z+3 nodi aggiunti si sceglie casualmente il prossimo nodo da analizzare
                         next_node = choice(buff_truck)
                     else:
