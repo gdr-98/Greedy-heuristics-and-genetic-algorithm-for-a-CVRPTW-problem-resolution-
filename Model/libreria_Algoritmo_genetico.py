@@ -144,7 +144,6 @@ class Algoritmo_genetico:
         current_node = 0            # Nodo che si sta analizzando nel percorso corrente  (si parte sempre dal nodo deposito)
         current_time = 0            # Tempo trascorso per arruvare al current_node
         remaining_capacity = self.instance.capacity     # Capacità rimanente del camion (il camion parte con capacità massima)
-        route = [self.instance.nodes[0]]             # Percorso del camion che si sta analizzando (un camion parte sempre dal deposito)
         j = 0                       # "j" serve alla scelta casuale che renderà le soluzioni eterogenee
 
         # Ciclo for : ogni iterazione genera una Solution nuova
@@ -152,6 +151,7 @@ class Algoritmo_genetico:
             routes = []         # Routes è la lista contente i percorsi dei vari camion quindi la Solution effettiva
             stop = 0            # Condizione di terminazione del while seguente
             truck_count = 0     # Truck_count riporta il numero di camion della Solution trovata (va inizializzato a 0)
+            route = [self.instance.nodes[0]]  # Inizializzazione percorso del primo camion (un camion parte sempre dal deposito)
             nodes_left = unsorted_nodes[1:len(unsorted_nodes)]        # Nodes_left rappresenta l'insieme dei nodi non
                                                                       # ancora raggiunti da nessun camion (escluso il deposito)
             buff_truck = unsorted_nodes[1:len(unsorted_nodes)]        # Buff_truck rappresenta la lista dei nodi usata da
@@ -167,9 +167,9 @@ class Algoritmo_genetico:
                     else:
                         min_distance_time = 1000000000
                         for i in buff_truck:
-                            if self.instance.distances[current_node, i.number] + i.due_date < min_distance_time:
+                            if (self.instance.distances[current_node, i.number]) + i.due_date < min_distance_time:
                                 index_best_choice = i.number
-                                min_distance_time = self.instance.distances[current_node, i.number] + i.due_date
+                                min_distance_time = (self.instance.distances[current_node, i.number]) + i.due_date
                         next_node = self.instance.nodes[index_best_choice]
 
                     if next_node.demand <= remaining_capacity and (
@@ -434,18 +434,23 @@ class Algoritmo_genetico:
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Avvio dell'algoritmo genetico
-    def Start_algorithm(self, tolerance=10, min_iterations=0, mut_prob=0.5, mut_dim=20, crossover_dim=20):
+    def Start_algorithm(self, tolerance=10, min_iterations=0, mut_prob=0.1, mut_dim=20, crossover_dim=20):
         best = self.Best_solution()
+        new_best_value = best.obj_fun_value
         worst = self.Worst_solution()
-        mutation_probability = mut_prob
         k = 0
-        while k < min_iterations or worst.obj_fun_value - best.obj_fun_value > tolerance:  # Genera nuove soluzioni finché il peggior individuo della
+        while k < min_iterations : #and worst.obj_fun_value - best.obj_fun_value > tolerance:  # Genera nuove soluzioni finché il peggior individuo della
             # popolazione non dista meno di "tolerance" dal peggiore
-            k += 1
+            if new_best_value == best.obj_fun_value:
+                k += 1
+            else:
+                new_best_value = best.obj_fun_value
+                k = 0
+
             # Effettua una possibile mutazione
             seed(time.time())
             p = random.uniform(0, 1)
-            if p < mutation_probability:
+            if p < mut_prob:
                 # Effettua mutazione
                 index_cavy = random.randint(0, len(self.population) - 1)
                 if self.population[index_cavy] != best:
@@ -469,17 +474,16 @@ class Algoritmo_genetico:
               #  index_parent2 = random.randint(0, len(self.population) - 1)
 
             # Crossover tra i due genitori
-            (child_1, child_2) = self.__BCRC(self.population[index_parent1], self.population[index_parent2], crossover_dim)
-            #(child_1, child_2) = self.__Double_crossover(self.population[index_parent1], self.population[index_parent2], crossover_dim)
+            if self.population[index_parent1].obj_fun_value == self.population[index_parent2].obj_fun_value:
+                (child_1, child_2) = self.__BCRC(self.population[index_parent1], self.population[index_parent2], crossover_dim)
+            else:
+                (child_1, child_2) = self.__Double_crossover(self.population[index_parent1], self.population[index_parent2], crossover_dim)
 
             # Estrazione delle 2 soluzioni peggiori, eventualmente da sostituire
             (index_worst1, index_worst2) = self.__Two_Worst_solutions()
 
             # Aggiornamento della popolazione con i nuovi individui, se vantaggioso
-            outcome = self.__Update_population(index_worst1, index_worst2, child_1, child_2)
-
-            if outcome == 1:
-                print("Generate due soluzioni inammissibili")
+            self.__Update_population(index_worst1, index_worst2, child_1, child_2)
 
             # Calcolo la nuova soluzione migliore e la nuova soluzione peggiore
             best = self.Best_solution()
@@ -590,8 +594,7 @@ class Algoritmo_genetico:
             temp = []
             for i in tmp_routes1:
                 # Si calcolano le distanze per ogni nodo j ed i
-                distances_from_list2[i.number] = (
-                    solution1.instance.nodes[j.number].distance(solution1.instance.nodes[i.number]))
+                distances_from_list2[i.number] = (self.instance.distances[j.number, i.number])
             # Si prende la chiave associata al minimo di queste distanze per capire dove inserire il nodo j di list2
             temp = min(distances_from_list2.values())
             # Si ha la lista dei nodi più vicini, possono essere più di uno
@@ -603,26 +606,26 @@ class Algoritmo_genetico:
                     index_min = tmp_routes1.index(i)
                     break
             # Si inserisce il minimo all'indice calcolato
-            tmp_routes1.insert(index_min + 1, j)
+            tmp_routes1.insert(index_min+1, j)
 
         results = []
         distances_from_list1 = {}
         for j in list1:
             temp = []
             for i in tmp_routes2:
-                distances_from_list1[i.number] = (
-                    solution2.instance.nodes[j.number].distance(solution2.instance.nodes[i.number]))
+                distances_from_list1[i.number] = (self.instance.distances[j.number, i.number])
             temp = min(distances_from_list1.values())
             results = ([key for key in distances_from_list1 if distances_from_list1[key] == temp])
             for i in tmp_routes2:
                 if i.number == results[random.randint(0, len(results) - 1)]:
                     index_min = tmp_routes2.index(i)
                     break
-            tmp_routes2.insert(index_min + 1, j)
+            tmp_routes2.insert(index_min+1, j)
 
-        new_solution1 = Solution(tmp_routes1,self.instance)
+        new_solution1 = Solution(tmp_routes1, self.instance)
         new_solution1.Add_storage()
-        new_solution2 = Solution(tmp_routes2,self.instance)
+
+        new_solution2 = Solution(tmp_routes2, self.instance)
         new_solution2.Add_storage()
 
         return new_solution1, new_solution2
@@ -679,12 +682,12 @@ class Algoritmo_genetico:
         for i in tmp_routes1:
             nodes.append(self.instance.nodes[i])
         new_sol1 = Solution(nodes, self.instance)
+        new_sol1.Add_storage()
+
         nodes = []
         for i in tmp_routes2:
             nodes.append(self.instance.nodes[i])
         new_sol2 = Solution(nodes, self.instance)
-
-        new_sol1.Add_storage()
         new_sol2.Add_storage()
 
         return new_sol1, new_sol2
@@ -761,8 +764,6 @@ class Algoritmo_genetico:
             index_worst_old = index_old_sol_1
             index_best_old = index_old_sol_2
 
-        #if sol1_acceptable and sol2_acceptable:
-
         if new_sol_1.fitness > new_sol_2.fitness:
             best_new = new_sol_1                # best_new è la Solution migliore delle due scelte per essere inserite
             worst_new = new_sol_2               # worst_new è la Solution migliore delle due scelte per essere inserite
@@ -781,33 +782,11 @@ class Algoritmo_genetico:
                 #if new_sol_1.admissible or new_sol_2.admissible:
                  #   print("Aggiunta soluzione inammissibile ")
 
-            elif worst_new.fitness <= self.population[index_worst_old].fitness:
+            else:
                 self.population[index_worst_old].Copy(best_new)
                 #if worst_new.admissible :
                  #   print("Aggiunta soluzione inammissibile ")
             return 0
-
-        return 1
-
-        """
-            elif sol1_acceptable:
-    
-                if new_sol_1.fitness > self.population[index_worst_old].fitness:
-                    self.population[index_worst_old].Copy(new_sol_1)
-                    #if new_sol_1.admissible:
-                     #   print("Aggiunta soluzione inammissibile ")
-                return 0
-    
-            elif sol2_acceptable:
-    
-                if new_sol_2.fitness > self.population[index_worst_old].fitness:
-                    self.population[index_worst_old].Copy(new_sol_2)
-                    #if new_sol_2.admissible:
-                     #   print("Aggiunta soluzione inammissibile ")
-                return 0
-    
-            else:
-        """
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Estrazione della soluzione peggiore della popolazione
