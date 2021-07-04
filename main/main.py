@@ -13,33 +13,33 @@ istanza = lib.CVRPTW(file)
 
 def main():
 
-    print(istanza)
+    #print(istanza)
     #X,U,A= istanza.optimize()
     #istanza.calculate_routes_from_model(X)
     #for i in istanza.routes:
        # print(i)
     #istanza.print_solution(X)
 
-    print("\n\nSoluzione Euristica : \n")
-    start = time.time()
+    print("Soluzione Euristica")
     test = gen.Algoritmo_genetico(istanza)
-    popolazione = test.Gen_starting_population_MDPDF(30, 50)
-    #popolazione = test.Gen_starting_population_NF(50, 50)
-    #popolazione = test.Gen_starting_population_EDF(50, 50)
-    #for i in popolazione:
-     #   print(i.obj_fun_value)
-    end = time.time()
-    best = test.Best_solution()
-    print(best.obj_fun_value)
-    print("\nTempo impiegato per generare la popolazione : ", end-start)
-    #print(best,"Indice soluzione : ", test.population.index(best))
-    #best = test.Start_algorithm(20, 0, 0.01, 10, 80)
+    #start = time.time()
+    #popolazione = test.Gen_starting_population_MDPDF(50, 100)
+    #popolazione = test.Gen_starting_population_NF(50, 150)
+    popolazione = test.Gen_starting_population_EDF(50, 150)
 
     #for i in popolazione:
      #   print(i.obj_fun_value)
-    #print(best)
+    #end = time.time()
+    best = test.Best_solution()
+    print(best.obj_fun_value, " Ammissibile : ", best.admissible)
+    #print("\nTempo impiegato per generare la popolazione : ", end-start)
+    best = test.Start_algorithm(30, 600, 0.2, 5, 30)
+    #k = 0
+    #for i in popolazione:
+        #k += 1
+        #print(k, " : ", i.obj_fun_value)
+    print(best)
     #test.Graph_solution(best)
 
 if __name__ == "__main__":
-    pass
-main()
+    main()
