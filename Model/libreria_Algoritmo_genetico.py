@@ -430,11 +430,11 @@ class Algoritmo_genetico:
             single_row_routes = temp[0:len(temp)]
             self.population.append(Solution(single_row_routes, self.instance, truck_count))
 
-        return self.population
+        return self.population[0:len(self.population)]
 
 # ----------------------------------------------------------------------------------------------------------------------
     # Avvio dell'algoritmo genetico
-    def Start_algorithm(self, tolerance=10, min_iterations=0, mut_prob=0.1, mut_dim=20, crossover_dim=20):
+    def Start_algorithm(self, min_iterations=0, mut_prob=0.1, mut_dim=20, crossover_dim=20):
         best = self.Best_solution()
         new_best_value = best.obj_fun_value
         worst = self.Worst_solution()
@@ -777,13 +777,19 @@ class Algoritmo_genetico:
 
         else:
             if best_new.fitness > self.population[index_best_old].fitness and worst_new.fitness > self.population[index_worst_old].fitness:
-                self.population[index_best_old].Copy(best_new)
-                self.population[index_worst_old].Copy(worst_new)
+                self.population.remove(self.population[index_best_old])
+                self.population.append(best_new)
+                self.population.remove(self.population[index_worst_old])
+                self.population.append(worst_new)
+                #self.population[index_best_old].Copy(best_new)
+                #self.population[index_worst_old].Copy(worst_new)
                 #if new_sol_1.admissible or new_sol_2.admissible:
                  #   print("Aggiunta soluzione inammissibile ")
 
             else:
-                self.population[index_worst_old].Copy(best_new)
+                self.population.remove(self.population[index_worst_old])
+                self.population.append(best_new)
+                #self.population[index_worst_old].Copy(best_new)
                 #if worst_new.admissible :
                  #   print("Aggiunta soluzione inammissibile ")
             return 0
