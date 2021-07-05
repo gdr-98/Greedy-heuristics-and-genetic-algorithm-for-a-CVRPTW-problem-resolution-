@@ -25,20 +25,46 @@ def main():
     #start = time.time()
     #popolazione = test.Gen_starting_population_MDPDF(50, 100)
     #popolazione = test.Gen_starting_population_NF(50, 150)
-    popolazione = test.Gen_starting_population_EDF(50, 150)
+    #popolazione = test.Gen_starting_population_EDF(50, 150)
 
+    popolazione= []
+    limit = 3600
+    while limit > 3550:
+        popolazione =[]
+        test.population = []
+        popolazione = test.Gen_starting_population_MDPDF(50, 50)
+        best = test.Best_solution()
+        limit = best.obj_fun_value
+        print(limit)
+    print("Soluzione accettabile")
     #for i in popolazione:
      #   print(i.obj_fun_value)
     #end = time.time()
-    best = test.Best_solution()
-    print(best.obj_fun_value, " Ammissibile : ", best.admissible)
+    #best = test.Best_solution()
+    #print(best.obj_fun_value, " Ammissibile : ", best.admissible)
     #print("\nTempo impiegato per generare la popolazione : ", end-start)
-    best = test.Start_algorithm(30, 600, 0.2, 5, 30)
+
+    dim_crossover = [10, 20, 40, 60]
+    mut_prob = [0.05, 0.1, 0.2, 0.3]
+    dim_mut = [5, 10, 15]
+
+
+    for c in dim_crossover:
+        for m in mut_prob:
+            for d_m in dim_mut:
+                buff_list = []
+                print("Dimensione crossover : ", c, "|| Probabilità mutazione : ", m, "|| Dimensione mutazione : ", d_m)
+                test.population[0:len(popolazione)] = popolazione[0:len(popolazione)]
+                for k in range(3):
+                    best = test.Start_algorithm(500, m, d_m, c)
+                    buff_list.append(best.obj_fun_value)
+                print("Soluzione migliore : ", min(buff_list))
+
     #k = 0
     #for i in popolazione:
         #k += 1
         #print(k, " : ", i.obj_fun_value)
-    print(best)
+    #print(best)
     #test.Graph_solution(best)
 
 if __name__ == "__main__":
