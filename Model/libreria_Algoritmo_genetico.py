@@ -777,10 +777,16 @@ class Algoritmo_genetico:
 
         else:
             if best_new.fitness > self.population[index_best_old].fitness and worst_new.fitness > self.population[index_worst_old].fitness:
-                self.population.remove(self.population[index_best_old])
+                if index_best_old > index_worst_old:
+                    self.population.remove(self.population[index_best_old])
+                    self.population.remove(self.population[index_worst_old])
+                else:
+                    self.population.remove(self.population[index_worst_old])
+                    self.population.remove(self.population[index_best_old])
+
                 self.population.append(best_new)
-                self.population.remove(self.population[index_worst_old])
                 self.population.append(worst_new)
+
                 #self.population[index_best_old].Copy(best_new)
                 #self.population[index_worst_old].Copy(worst_new)
                 #if new_sol_1.admissible or new_sol_2.admissible:
