@@ -1,4 +1,4 @@
-from librerie import libreria_Alg_Genetico as gen, libreria_CVRPTW as lib
+from Model import libreria_Alg_Genetico as gen, libreria_CVRPTW as lib
 import time
 import networkx as nx
 import matplotlib.pyplot as plt
