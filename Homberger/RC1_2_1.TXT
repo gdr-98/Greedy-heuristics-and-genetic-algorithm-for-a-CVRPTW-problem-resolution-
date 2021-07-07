@@ -208,3 +208,4 @@ CUST NO.  XCOORD.    YCOORD.    DEMAND   READY TIME  DUE DATE   SERVICE TIME
   198     140         36          1        176        206         10
   199      26        105         40         56         86         10
   200      60         23         16         54         84         10
+EOF
